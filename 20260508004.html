@@ -869,37 +869,111 @@ function renderList(){
   }).join('');
 }
 
+// 台灣每月時令蔬菜資料
+const SEASONAL_VEG={
+  1:['高麗菜','白菜','菠菜','芹菜','韭菜','蒜苗','青蔥','花椰菜','蘿蔔','地瓜葉'],
+  2:['高麗菜','白菜','菠菜','韭菜','蒜苗','青蔥','花椰菜','蘿蔔','荷蘭豆','豌豆'],
+  3:['高麗菜','菠菜','韭菜','青蔥','萵苣','茼蒿','豌豆','蘿蔔','芥藍','莧菜'],
+  4:['空心菜','莧菜','地瓜葉','韭菜','青蔥','萵苣','茄子','四季豆','絲瓜','玉米'],
+  5:['空心菜','莧菜','地瓜葉','絲瓜','苦瓜','四季豆','茄子','玉米','秋葵','小白菜'],
+  6:['空心菜','莧菜','地瓜葉','絲瓜','苦瓜','茄子','玉米','秋葵','龍鬚菜','冬瓜'],
+  7:['空心菜','莧菜','地瓜葉','絲瓜','苦瓜','茄子','玉米','秋葵','龍鬚菜','冬瓜'],
+  8:['空心菜','莧菜','地瓜葉','絲瓜','苦瓜','茄子','秋葵','龍鬚菜','冬瓜','青椒'],
+  9:['空心菜','莧菜','地瓜葉','茄子','秋葵','冬瓜','青椒','高麗菜','白菜','花椰菜'],
+  10:['高麗菜','白菜','花椰菜','菠菜','芹菜','青蔥','萵苣','芥藍','地瓜葉','南瓜'],
+  11:['高麗菜','白菜','花椰菜','菠菜','芹菜','青蔥','萵苣','芥藍','蘿蔔','韭菜'],
+  12:['高麗菜','白菜','菠菜','芹菜','韭菜','青蔥','花椰菜','蘿蔔','芥藍','茼蒿']
+};
+
+const GEMINI_KEY='AIzaSyBjeWWBkaZUU96KOSijLTRkwf7UEUt20aw';
+
 async function runAnalysis(){
   if(!allDishes.length){toast('請先載入菜單');return;}
   const out=document.getElementById('analysis-out');
   out.innerHTML='<div class="ldrow"><span class="spinner"></span>分析中…</div>';
+
   const dc={};allDishes.forEach(d=>{dc[d.name]=(dc[d.name]||0)+1;});
   const sorted=Object.entries(dc).sort((a,b)=>b[1]-a[1]).slice(0,15);
   const rpNames=[...new Set(allDishes.filter(d=>isRepeat(d,allDishes)).map(d=>d.name))];
 
-  // Show frequency chart without AI
+  // 頻率圖
   const mc=sorted[0]?.[1]||1;
   const bars=sorted.slice(0,10).map(([n,c])=>{
     const w=Math.round(c/mc*100),hi=c>=3;
     return`<div class="br"><span class="bn">${n}</span><div class="bbg"><div class="bf" style="width:${w}%;background:${hi?'var(--warn)':'var(--accent)'}"></div></div><span class="bc">${c}次</span></div>`;
   }).join('');
 
-  // Generate suggestions locally based on data
-  const mealTypes={};
-  allDishes.forEach(d=>{mealTypes[d.cat]=(mealTypes[d.cat]||0)+1;});
-  const suggestions=[];
-  if(rpNames.length>3)suggestions.push({name:'建議增加新菜色',reason:`有 ${rpNames.length} 道菜在10天內重複出現`});
-  const friedCount=allDishes.filter(d=>['炸','酥','脆皮'].some(k=>d.name.includes(k))).length;
-  if(friedCount/allDishes.length>0.15)suggestions.push({name:'減少油炸類料理',reason:`油炸比例偏高（${Math.round(friedCount/allDishes.length*100)}%），建議改用清蒸或燉煮`});
-  const topDish=sorted[0];
-  if(topDish&&topDish[1]>=4)suggestions.push({name:`調整「${topDish[0]}」出現頻率`,reason:`本月已出現 ${topDish[1]} 次，建議替換其他菜色`});
-  suggestions.push({name:'增加時令蔬菜種類',reason:'多樣化蔬菜有助於提升員工餐品質'});
+  // 時令蔬菜分析
+  const now=new Date();
+  const month=now.getMonth()+1;
+  const seasonal=SEASONAL_VEG[month]||[];
+  const usedVeg=allDishes.filter(d=>d.cat==='時蔬').map(d=>d.name);
+  const usedSet=new Set(usedVeg);
+  const missingVeg=seasonal.filter(v=>![...usedSet].some(u=>u.includes(v)||v.includes(u)));
+  const recommendVeg=missingVeg.slice(0,5);
 
-  const sugs=suggestions.map(s=>`<div class="si"><div class="sn">${s.name}</div><div class="sr">${s.reason}</div></div>`).join('');
   const summary=rpNames.length>0?`本月有 ${rpNames.length} 道菜色在10天內重複，建議調整菜單多樣性`:'本月菜單多樣性良好';
 
-  out.innerHTML=`<div style="background:var(--info-light);border:1px solid #c0d0e8;border-radius:var(--r);padding:12px 16px;font-size:13px;color:var(--info);margin-bottom:16px">${summary}</div>
-  <div class="agrid"><div class="ac"><h4>菜色出現頻率</h4>${bars}</div><div class="ac"><h4>建議補充菜色</h4>${sugs}</div></div>`;
+  const vegCards=recommendVeg.map(v=>`
+    <div style="background:var(--bg);border-radius:var(--r);border:1px solid var(--border);padding:12px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div style="font-size:13px;font-weight:500">清炒${v}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${month}月盛產・當季推薦</div>
+        </div>
+        <button class="btn btn-ghost" onclick="genImage('清炒${v}', this)" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          生成圖片
+        </button>
+      </div>
+      <div id="img-${v}" style="display:none;margin-top:8px"></div>
+    </div>`).join('');
+
+  out.innerHTML=`
+    <div style="background:var(--info-light);border:1px solid #c0d0e8;border-radius:var(--r);padding:12px 16px;font-size:13px;color:var(--info);margin-bottom:16px">${summary}</div>
+    <div class="agrid">
+      <div class="ac"><h4>菜色出現頻率</h4>${bars}</div>
+      <div class="ac">
+        <h4>${month}月時令蔬菜推薦</h4>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px">本月盛產但尚未使用的蔬菜</div>
+        ${vegCards||'<p style="font-size:13px;color:var(--text3)">本月時令蔬菜都已使用，很棒！</p>'}
+      </div>
+    </div>`;
+}
+
+async function genImage(dishName, btn){
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>';
+  const key=GEMINI_KEY;
+  const vegName=dishName.replace('清炒','');
+  const imgDiv=document.getElementById('img-'+vegName);
+  try{
+    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${key}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{parts:[{text:`生成一張台式員工餐廳的「${dishName}」料理照片，真實食物攝影風格，白色盤子盛裝，簡潔乾淨的擺盤，俯視角度`}]}],
+        generationConfig:{responseModalities:['TEXT','IMAGE']}
+      })
+    });
+    const data=await resp.json();
+    // Find image part
+    const parts=data.candidates?.[0]?.content?.parts||[];
+    const imgPart=parts.find(p=>p.inlineData);
+    if(imgPart){
+      imgDiv.style.display='block';
+      imgDiv.innerHTML=`<img src="data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}" style="width:100%;border-radius:8px;border:1px solid var(--border)">`;
+      btn.innerHTML='✓ 已生成';
+    } else {
+      toast('圖片生成失敗，請稍後再試');
+      btn.disabled=false;
+      btn.innerHTML='生成圖片';
+    }
+  }catch(e){
+    toast('生成失敗：'+e.message);
+    btn.disabled=false;
+    btn.innerHTML='生成圖片';
+  }
 }
 
 function renderSettings(){
