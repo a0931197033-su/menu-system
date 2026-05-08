@@ -253,7 +253,7 @@ pre.gas{background:#1A1814;color:#a8d8a8;padding:14px;border-radius:var(--r);fon
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
         上傳新照片
       </h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
         <div class="fg">
           <label>日期</label>
           <input type="date" id="up-date">
@@ -263,30 +263,19 @@ pre.gas{background:#1A1814;color:#a8d8a8;padding:14px;border-radius:var(--r);fon
           <select id="up-meal">
             <option value="午餐">午餐</option>
             <option value="晚餐">晚餐</option>
+            <option value="下午茶">下午茶</option>
           </select>
-        </div>
-        <div class="fg">
-          <label>廚師（選填）</label>
-          <input type="text" id="up-chef" placeholder="姓名">
         </div>
       </div>
 
       <div class="upload-drop" id="drop-zone">
-        <input type="file" accept="image/*" id="file-input" onchange="handleFile(this)">
+        <input type="file" accept="image/*" id="file-input" multiple onchange="handleFiles(this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-        <p>點擊或拖曳照片至此處</p>
+        <p>點擊或拖曳照片至此處（可多選）</p>
       </div>
 
-      <div class="preview-box" id="preview-box">
-        <img id="preview-img" src="" alt="">
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:500;margin-bottom:8px" id="preview-name"></div>
-          <button class="btn btn-primary" onclick="runAI()" id="ai-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            AI 辨識菜名
-          </button>
-        </div>
-      </div>
+      <!-- 多張照片預覽 -->
+      <div id="multi-preview" style="display:none;margin-top:14px"></div>
 
       <div class="ai-result" id="ai-result">
         <div class="ai-lbl">AI 辨識結果 — 點選要記錄的菜色</div>
@@ -401,8 +390,8 @@ pre.gas{background:#1A1814;color:#a8d8a8;padding:14px;border-radius:var(--r);fon
 
 <script>
 const GAS_KEY='gas_v3',TABS_KEY='tabs_v2',CACHE_KEY='cache_v2',PHOTOS_KEY='photos_v1';
-const HARDCODED_GAS='https://script.google.com/macros/s/AKfycbySF3uPvgiWpOINnan5-4ThGnLwSEE3K0MTc0fzu9Tg3gvBOzGGhDrN62GKrzK54Q33pg/exec';
-let allDishes=[],selectedDishes=[],currentFile=null,currentBase64=null;
+const HARDCODED_GAS='https://script.google.com/macros/s/AKfycbwq7xvJw1CSCcH26QZ3_BKADhj58IDNPo-IBsdczENIkAYgza1eraCNSaGZdU58SKOOcw/exec';
+let allDishes=[],selectedDishes=[],pendingFiles=[];
 let photoLog=[];
 
 function toast(msg){const t=document.getElementById('toast-el');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
@@ -432,57 +421,74 @@ function buildMonthSel(){
   tabs.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
 }
 
-// ── File handling ─────────────────────────────────
-function handleFile(input){
-  const file=input.files[0];if(!file)return;
-  currentFile=file;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    currentBase64=e.target.result.split(',')[1];
-    document.getElementById('preview-img').src=e.target.result;
-    document.getElementById('preview-name').textContent=file.name;
-    document.getElementById('preview-box').style.display='flex';
-    document.getElementById('ai-result').style.display='none';
-    selectedDishes=[];
-  };
-  reader.readAsDataURL(file);
+function handleFiles(input){
+  const files=Array.from(input.files);
+  if(!files.length)return;
+  pendingFiles=[];
+  selectedDishes=[];
+  document.getElementById('ai-result').style.display='none';
+  const preview=document.getElementById('multi-preview');
+  preview.innerHTML='<div style="font-size:12px;color:var(--text3);margin-bottom:8px">已選擇 '+files.length+' 張照片</div><div style="display:flex;flex-wrap:wrap;gap:8px" id="thumb-row"></div><button class="btn btn-primary" onclick="runAIMulti()" id="ai-btn" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> AI 辨識所有照片菜名</button>';
+  preview.style.display='block';
+  const thumbRow=document.getElementById('thumb-row');
+  files.forEach((file,i)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const b64=e.target.result.split(',')[1];
+      pendingFiles[i]={file,base64:b64,name:file.name};
+      const img=document.createElement('img');
+      img.src=e.target.result;
+      img.style.cssText='width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--border)';
+      thumbRow.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
 }
+
+// Keep drag/drop working
 const dz=document.getElementById('drop-zone');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
 dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
 dz.addEventListener('drop',e=>{
   e.preventDefault();dz.classList.remove('over');
-  const f=e.dataTransfer.files[0];
-  if(f&&f.type.startsWith('image/')){
-    const dt=new DataTransfer();dt.items.add(f);
+  const files=Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/'));
+  if(files.length){
+    const dt=new DataTransfer();
+    files.forEach(f=>dt.items.add(f));
     document.getElementById('file-input').files=dt.files;
-    handleFile(document.getElementById('file-input'));
+    handleFiles(document.getElementById('file-input'));
   }
 });
 
-// ── AI recognition ────────────────────────────────
-async function runAI(){
-  if(!currentBase64)return toast('請先選擇照片');
+async function runAIMulti(){
+  if(!pendingFiles.length)return toast('請先選擇照片');
   const btn=document.getElementById('ai-btn');
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span> 辨識中…';
+  const url=gasUrl();
+  const allDishesFound=[];
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,
-        messages:[{role:'user',content:[
-          {type:'image',source:{type:'base64',media_type:currentFile.type,data:currentBase64}},
-          {type:'text',text:'請辨識這張照片中的所有菜色，只回傳JSON陣列，不要任何其他文字，格式：["菜名1","菜名2"]。使用繁體中文。'}
-        ]}]
-      })
-    });
-    const data=await resp.json();
-    const text=data.content?.[0]?.text||'[]';
-    let dishes=[];
-    try{dishes=JSON.parse(text.match(/\[.*\]/s)?.[0]||'[]');}catch(e){}
-    renderDishTags(dishes);
+    for(const pf of pendingFiles){
+      if(!pf)continue;
+      const resp=await fetch(url,{
+        method:'POST',
+        body:JSON.stringify({
+          action:'recognize',
+          image:pf.base64,
+          mimeType:pf.file.type||'image/jpeg'
+        })
+      });
+      const data=await resp.json();
+      if(data.error)throw new Error(data.error);
+      (data.dishes||[]).forEach(d=>{if(!allDishesFound.includes(d))allDishesFound.push(d);});
+    }
+    renderDishTags(allDishesFound);
     document.getElementById('ai-result').style.display='block';
-  }catch(e){toast('辨識失敗，請重試');}
-  finally{btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> AI 辨識菜名';}
+    toast('✓ 辨識完成，共 '+allDishesFound.length+' 道菜');
+  }catch(e){
+    toast('辨識失敗：'+e.message);
+  }finally{
+    btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> AI 辨識所有照片菜名';
+  }
 }
 
 function renderDishTags(dishes){
@@ -518,49 +524,43 @@ function addManualDish(){
 
 // ── Save & upload to Drive ────────────────────────
 async function savePhoto(){
-  if(!currentBase64)return toast('請先選擇照片');
+  if(!pendingFiles.length)return toast('請先選擇照片');
   if(selectedDishes.length===0)return toast('請先選擇菜色');
   const url=gasUrl();
-  if(!url)return toast('請先在設定頁面設定 GAS 網址');
-
+  if(!url)return toast('請先設定 GAS 網址');
   const date=document.getElementById('up-date').value;
   const meal=document.getElementById('up-meal').value;
-  const chef=document.getElementById('up-chef').value.trim();
   if(!date)return toast('請選擇日期');
-
-  const [y,m,d]=date.split('-');
+  const[y,m]=date.split('-');
   const month=`${y}-${m}`;
-  const filename=`${date.replace(/-/g,'')}_${meal}.${currentFile.type.split('/')[1]||'jpg'}`;
-
   const prog=document.getElementById('upload-progress');
   const fill=document.getElementById('progress-fill');
   const ptxt=document.getElementById('progress-text');
-  prog.style.display='flex';fill.style.width='30%';ptxt.textContent='上傳中…';
+  prog.style.display='flex';fill.style.width='10%';ptxt.textContent='上傳中…';
   document.getElementById('save-btn').disabled=true;
-
   try{
-    fill.style.width='60%';
-    const resp=await fetch(url,{
-      method:'POST',
-      body:JSON.stringify({image:currentBase64,mimeType:currentFile.type,filename,date,meal,chef,dishes:selectedDishes,month})
-    });
-    const json=await resp.json();
-    if(json.error)throw new Error(json.error);
+    for(let i=0;i<pendingFiles.length;i++){
+      const pf=pendingFiles[i];if(!pf)continue;
+      const ext=(pf.file.type||'image/jpeg').split('/')[1]||'jpg';
+      const filename=`${date.replace(/-/g,'')}_${meal}_${i+1}.${ext}`;
+      fill.style.width=Math.round((i+1)/pendingFiles.length*90)+'%';
+      ptxt.textContent=`上傳第 ${i+1}/${pendingFiles.length} 張…`;
+      await fetch(url,{
+        method:'POST',
+        body:JSON.stringify({image:pf.base64,mimeType:pf.file.type||'image/jpeg',filename,date,meal,chef:'',dishes:selectedDishes,month})
+      });
+    }
     fill.style.width='100%';ptxt.textContent='✓ 上傳成功';
-
-    // Save to local log
-    photoLog.unshift({date,meal,chef,dishes:[...selectedDishes],driveUrl:json.url,filename,ts:Date.now()});
+    photoLog.unshift({date,meal,chef:'',dishes:[...selectedDishes],driveUrl:'',filename:date+'_'+meal,ts:Date.now()});
     try{localStorage.setItem(PHOTOS_KEY,JSON.stringify(photoLog.slice(0,200)));}catch(e){}
     renderPhotoLog();
     toast('✓ 照片已存到 Google Drive');
-
-    // Reset
     setTimeout(()=>{
       prog.style.display='none';fill.style.width='0%';
       document.getElementById('ai-result').style.display='none';
-      document.getElementById('preview-box').style.display='none';
+      document.getElementById('multi-preview').style.display='none';
       document.getElementById('file-input').value='';
-      selectedDishes=[];currentBase64=null;currentFile=null;
+      pendingFiles=[];selectedDishes=[];
     },1500);
   }catch(e){
     ptxt.textContent='上傳失敗：'+e.message;fill.style.width='0%';
