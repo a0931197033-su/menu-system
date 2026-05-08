@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>本週菜單建議｜傳奇廚房</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#FDFAF5;
+  --ink:#1C1A16;
+  --ink2:#5C5650;
+  --ink3:#9C9690;
+  --gold:#C4922A;
+  --gold-light:#F5E8C8;
+  --red:#C43A2A;
+  --red-light:#FAE8E6;
+  --green:#2A6644;
+  --green-light:#E6F2EC;
+  --border:#E8E0D0;
+  --serif:'Noto Serif TC',serif;
+  --sans:'Noto Sans TC',sans-serif;
+}
+body{
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+  padding-bottom:60px;
+}
+
+/* Header */
+.header{
+  background:var(--ink);
+  padding:24px 24px 20px;
+  position:relative;
+  overflow:hidden;
+}
+.header::before{
+  content:'';
+  position:absolute;
+  top:-40px;right:-40px;
+  width:200px;height:200px;
+  border:40px solid rgba(196,146,42,0.15);
+  border-radius:50%;
+}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.logo{font-family:var(--serif);font-size:18px;font-weight:700;color:#fff;letter-spacing:0.05em}
+.logo span{color:var(--gold)}
+.date-badge{
+  background:rgba(196,146,42,0.2);
+  border:1px solid rgba(196,146,42,0.4);
+  border-radius:20px;
+  padding:4px 12px;
+  font-size:11px;
+  color:var(--gold);
+  font-family:monospace;
+}
+.header h1{
+  font-family:var(--serif);
+  font-size:26px;
+  font-weight:700;
+  color:#fff;
+  line-height:1.3;
+  margin-bottom:6px;
+}
+.header p{font-size:13px;color:rgba(255,255,255,0.5)}
+
+/* Loading */
+.loading{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:80px 20px;gap:16px;
+}
+.loading-ring{
+  width:40px;height:40px;
+  border:3px solid var(--border);
+  border-top-color:var(--gold);
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{font-size:13px;color:var(--ink3)}
+
+/* Error */
+.error-box{
+  margin:24px;
+  background:var(--red-light);
+  border:1px solid #f0c0bc;
+  border-radius:12px;
+  padding:16px;
+  font-size:13px;
+  color:var(--red);
+}
+
+/* Section */
+.section{margin:20px 16px 0}
+.section-title{
+  display:flex;align-items:center;gap:8px;
+  font-family:var(--serif);
+  font-size:15px;font-weight:600;
+  color:var(--ink);
+  margin-bottom:14px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+}
+.section-title .icon{
+  width:28px;height:28px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;
+}
+
+/* Summary cards */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.sum-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+}
+.sum-card .lbl{font-size:10px;color:var(--ink3);letter-spacing:0.06em;margin-bottom:6px;font-family:monospace}
+.sum-card .val{font-size:28px;font-weight:700;letter-spacing:-0.03em;line-height:1;font-family:var(--serif)}
+.sum-card .sub{font-size:11px;color:var(--ink3);margin-top:4px}
+.sum-warn .val{color:var(--red)}
+.sum-good .val{color:var(--green)}
+
+/* Repeat warning */
+.repeat-list{display:flex;flex-direction:column;gap:8px}
+.repeat-item{
+  background:#fff;
+  border:1px solid var(--border);
+  border-left:3px solid var(--red);
+  border-radius:0 10px 10px 0;
+  padding:10px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.repeat-item .name{font-size:14px;font-weight:500}
+.repeat-item .cnt{
+  font-size:11px;font-family:monospace;
+  background:var(--red-light);
+  color:var(--red);
+  padding:2px 8px;border-radius:10px;
+}
+
+/* Seasonal veg */
+.veg-grid{display:flex;flex-wrap:wrap;gap:8px}
+.veg-tag{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:6px 14px;
+  font-size:13px;
+  display:flex;align-items:center;gap:6px;
+}
+.veg-tag.used{
+  background:var(--green-light);
+  border-color:#b0d8be;
+  color:var(--green);
+}
+.veg-tag.new{
+  background:var(--gold-light);
+  border-color:#dcc898;
+  color:#8a6010;
+}
+.veg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.veg-dot.used{background:var(--green)}
+.veg-dot.new{background:var(--gold)}
+
+/* Suggestions */
+.sug-list{display:flex;flex-direction:column;gap:10px}
+.sug-item{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+}
+.sug-item .meal-badge{
+  display:inline-block;
+  font-size:10px;padding:2px 8px;border-radius:10px;
+  margin-bottom:8px;font-family:monospace;
+}
+.lunch-b{background:#FFF8E7;color:#92621A;border:1px solid #F0D898}
+.dinner-b{background:#EEF0FB;color:#3A45A0;border:1px solid #C8CCF0}
+.sug-item .dish-name{font-size:15px;font-weight:500;margin-bottom:4px;font-family:var(--serif)}
+.sug-item .reason{font-size:12px;color:var(--ink2);line-height:1.5}
+
+/* Footer */
+.footer{
+  text-align:center;padding:24px 16px;
+  font-size:11px;color:var(--ink3);
+  margin-top:20px;
+}
+
+/* Config modal */
+.config-btn{
+  position:fixed;bottom:20px;right:20px;
+  width:44px;height:44px;border-radius:50%;
+  background:var(--ink);color:#fff;
+  border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  z-index:100;
+}
+.config-btn svg{width:18px;height:18px}
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,0.5);
+  z-index:200;display:flex;align-items:flex-end;
+  display:none;
+}
+.modal.open{display:flex}
+.modal-box{
+  background:#fff;border-radius:20px 20px 0 0;
+  padding:24px;width:100%;
+}
+.modal-box h3{font-size:16px;font-weight:500;margin-bottom:16px}
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.fg label{font-size:11px;color:var(--ink2);font-family:monospace;letter-spacing:0.04em}
+.fg input,.fg select{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:10px;padding:10px 12px;
+  font-size:14px;font-family:var(--sans);
+  color:var(--ink);outline:none;width:100%;
+}
+.fg input:focus,.fg select:focus{border-color:var(--gold)}
+.btn{
+  display:flex;align-items:center;justify-content:center;
+  gap:6px;padding:12px;border-radius:10px;
+  font-size:14px;font-family:var(--sans);
+  cursor:pointer;border:none;width:100%;font-weight:500;
+}
+.btn-primary{background:var(--ink);color:#fff;margin-bottom:8px}
+.btn-ghost{background:transparent;color:var(--ink2);border:1px solid var(--border)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">傳奇<span>廚房</span></div>
+    <div class="date-badge" id="date-badge"></div>
+  </div>
+  <h1>本週菜單<br>建議報告</h1>
+  <p>根據近期菜單分析，提供廚師參考建議</p>
+</div>
+
+<div id="main-content">
+  <div class="loading">
+    <div class="loading-ring"></div>
+    <p>載入菜單資料中…</p>
+  </div>
+</div>
+
+<!-- 設定按鈕 -->
+<button class="config-btn" onclick="openConfig()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+</button>
+
+<!-- 設定 Modal -->
+<div class="modal" id="config-modal">
+  <div class="modal-box">
+    <h3>設定</h3>
+    <div class="fg">
+      <label>GAS 網址</label>
+      <input type="text" id="cfg-gas" placeholder="https://script.google.com/macros/s/…/exec">
+    </div>
+    <div class="fg">
+      <label>菜單分頁名稱</label>
+      <input type="text" id="cfg-sheet" placeholder="「5月份菜單」的副本">
+    </div>
+    <button class="btn btn-primary" onclick="saveConfig()">儲存並重新載入</button>
+    <button class="btn btn-ghost" onclick="closeConfig()">取消</button>
+  </div>
+</div>
+
+<script>
+const GAS_KEY='chef_gas_url';
+const SHEET_KEY='chef_sheet';
+
+const SEASONAL_VEG={
+  1:['高麗菜','白菜','菠菜','芹菜','韭菜','青蔥','花椰菜','蘿蔔','地瓜葉','茼蒿'],
+  2:['高麗菜','白菜','菠菜','韭菜','青蔥','花椰菜','蘿蔔','荷蘭豆','豌豆','芥藍'],
+  3:['高麗菜','菠菜','韭菜','青蔥','萵苣','茼蒿','豌豆','蘿蔔','芥藍','莧菜'],
+  4:['空心菜','莧菜','地瓜葉','韭菜','青蔥','萵苣','茄子','四季豆','絲瓜','玉米'],
+  5:['空心菜','莧菜','地瓜葉','絲瓜','苦瓜','四季豆','茄子','玉米','秋葵','小白菜'],
+  6:['空心菜','莧菜','地瓜葉','絲瓜','苦瓜','茄子','玉米','秋葵','龍鬚菜','冬瓜'],
+  7:['空心菜','莧菜','地瓜葉','絲瓜','苦瓜','茄子','玉米','秋葵','龍鬚菜','冬瓜'],
+  8:['空心菜','莧菜','地瓜葉','絲瓜','苦瓜','茄子','秋葵','龍鬚菜','冬瓜','青椒'],
+  9:['空心菜','莧菜','地瓜葉','茄子','秋葵','冬瓜','青椒','高麗菜','白菜','花椰菜'],
+  10:['高麗菜','白菜','花椰菜','菠菜','芹菜','青蔥','萵苣','芥藍','地瓜葉','南瓜'],
+  11:['高麗菜','白菜','花椰菜','菠菜','芹菜','青蔥','萵苣','芥藍','蘿蔔','韭菜'],
+  12:['高麗菜','白菜','菠菜','芹菜','韭菜','青蔥','花椰菜','蘿蔔','芥藍','茼蒿']
+};
+
+// Date display
+const now=new Date();
+const months=['一','二','三','四','五','六','七','八','九','十','十一','十二'];
+document.getElementById('date-badge').textContent=`${now.getFullYear()}年${months[now.getMonth()]}月`;
+
+function gasUrl(){return localStorage.getItem(GAS_KEY)||'';}
+function sheetName(){return localStorage.getItem(SHEET_KEY)||'';}
+
+function toDate(mmdd){
+  if(!mmdd)return new Date(0);
+  const[m,d]=mmdd.split('/').map(Number);
+  return new Date(now.getFullYear(),m-1,d);
+}
+function isRepeat(dish,list){
+  const d0=toDate(dish.date);
+  return list.some(x=>{
+    if(x===dish||x.name!==dish.name)return false;
+    const diff=Math.abs(d0-toDate(x.date))/86400000;
+    return diff>0&&diff<=10;
+  });
+}
+
+function parseRows(rows){
+  if(!rows||rows.length<2)return[];
+  const dishes=[],mealKw=['中餐','晚餐','下午茶'],catKw=['主餐','副餐','時蔬','湯品','點心'];
+  function toMMDD(s){
+    if(!s)return'';s=s.toString().trim();
+    if(/^\d+\/\d+$/.test(s))return s;
+    const months={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+    const m=s.match(/(\w{3})\s+(\d{1,2})\s+(\d{4})/);
+    if(m&&months[m[1]])return months[m[1]]+'/'+parseInt(m[2]);
+    return'';
+  }
+  const hasChefHeader=rows.some(r=>r&&(r[0]||'').toString().trim()==='菜單負責人');
+  let currentDates={},mealByDateCol={},currentChef='';
+  if(hasChefHeader){
+    for(let r=0;r<rows.length;r++){
+      const row=rows[r];if(!row||row.every(c=>!c))continue;
+      const first=(row[0]||'').toString().trim();
+      if(first==='菜單負責人'){
+        currentDates={};mealByDateCol={};
+        for(let c=1;c<row.length;c+=3){const d=toMMDD((row[c]||'').toString());if(d)currentDates[c]=d;}
+        continue;
+      }
+      if(first)currentChef=first;
+      for(let c=1;c<row.length-1;c++){
+        const v=(row[c]||'').toString().trim();
+        const block=Math.floor((c-1)/3);const dateCol=1+block*3;
+        if(mealKw.includes(v))mealByDateCol[dateCol]=v;
+        if(catKw.includes(v)){
+          const dn=(row[c+1]||'').toString().trim();
+          if(!dn||dn==='菜色'||dn==='菜名')continue;
+          const date=currentDates[dateCol]||'';if(!date)continue;
+          dishes.push({date,meal:mealByDateCol[dateCol]||'中餐',cat:v,name:dn,chef:currentChef});
+        }
+      }
+    }
+  } else {
+    let currentDates2={},mealByDateCol2={};
+    for(let r=0;r<rows.length;r++){
+      const row=rows[r];if(!row||row.every(c=>!c))continue;
+      const isDateRow=toMMDD((row[0]||'').toString())!=='';
+      if(isDateRow){
+        currentDates2={};mealByDateCol2={};
+        for(let c=0;c<row.length;c+=3){const d=toMMDD((row[c]||'').toString());if(d)currentDates2[c]=d;}
+        continue;
+      }
+      for(let c=0;c<row.length;c++){
+        const v=(row[c]||'').toString().trim();
+        const dateCol=Math.floor(c/3)*3;
+        if(mealKw.includes(v))mealByDateCol2[dateCol]=v;
+        if(catKw.includes(v)){
+          const dn=(row[c+1]||'').toString().trim();if(!dn)continue;
+          const date=currentDates2[dateCol]||'';if(!date)continue;
+          dishes.push({date,meal:mealByDateCol2[dateCol]||'中餐',cat:v,name:dn,chef:''});
+        }
+      }
+    }
+  }
+  const seen=new Set();
+  return dishes.filter(d=>{const k=d.date+'|'+d.meal+'|'+d.cat+'|'+d.name;if(seen.has(k))return false;seen.add(k);return true;});
+}
+
+async function loadAndRender(){
+  const url=gasUrl();
+  const sheet=sheetName();
+  if(!url||!sheet){
+    document.getElementById('main-content').innerHTML=`
+      <div style="padding:40px 20px;text-align:center">
+        <div style="font-size:40px;margin-bottom:16px">👆</div>
+        <div style="font-size:15px;font-weight:500;margin-bottom:8px">請先設定資料來源</div>
+        <div style="font-size:13px;color:var(--ink3)">點右下角設定按鈕，填入 GAS 網址和分頁名稱</div>
+      </div>`;
+    return;
+  }
+  try{
+    const resp=await fetch(url+'?sheet='+encodeURIComponent(sheet));
+    const json=await resp.json();
+    if(json.error)throw new Error(json.error);
+    const dishes=parseRows(json.rows||[]);
+    renderContent(dishes);
+  }catch(e){
+    document.getElementById('main-content').innerHTML=`<div class="error-box">載入失敗：${e.message}</div>`;
+  }
+}
+
+function renderContent(dishes){
+  const month=now.getMonth()+1;
+  const seasonal=SEASONAL_VEG[month]||[];
+  const usedVeg=[...new Set(dishes.filter(d=>d.cat==='時蔬').map(d=>d.name))];
+  const repeatDishes=[...new Set(dishes.filter(d=>isRepeat(d,dishes)).map(d=>d.name))];
+  const dc={};dishes.forEach(d=>{dc[d.name]=(dc[d.name]||0)+1;});
+  const sorted=Object.entries(dc).sort((a,b)=>b[1]-a[1]);
+  const topRepeats=sorted.filter(([n])=>repeatDishes.includes(n)).slice(0,5);
+
+  // Next week suggestions
+  const missingVeg=seasonal.filter(v=>!usedVeg.some(u=>u.includes(v)||v.includes(u))).slice(0,4);
+  const suggestions=generateSuggestions(dishes,missingVeg,month);
+
+  const html=`
+    <div class="section">
+      <div class="summary-grid">
+        <div class="sum-card ${repeatDishes.length>5?'sum-warn':'sum-good'}">
+          <div class="lbl">重複菜色</div>
+          <div class="val">${repeatDishes.length}</div>
+          <div class="sub">10天內重複出現</div>
+        </div>
+        <div class="sum-card">
+          <div class="lbl">本月菜色</div>
+          <div class="val">${Object.keys(dc).length}</div>
+          <div class="sub">道不重複菜色</div>
+        </div>
+      </div>
+    </div>
+
+    ${topRepeats.length>0?`
+    <div class="section">
+      <div class="section-title">
+        <div class="icon" style="background:#FAE8E6">⚠️</div>
+        近期重複警示
+      </div>
+      <div class="repeat-list">
+        ${topRepeats.map(([n,c])=>`
+          <div class="repeat-item">
+            <span class="name">${n}</span>
+            <span class="cnt">出現 ${c} 次</span>
+          </div>`).join('')}
+      </div>
+    </div>`:''}
+
+    <div class="section">
+      <div class="section-title">
+        <div class="icon" style="background:#E6F2EC">🌿</div>
+        ${month}月時令蔬菜
+      </div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">綠色=已使用　金色=建議嘗試</div>
+      <div class="veg-grid">
+        ${seasonal.map(v=>{
+          const isUsed=usedVeg.some(u=>u.includes(v)||v.includes(u));
+          return`<div class="veg-tag ${isUsed?'used':'new'}">
+            <span class="veg-dot ${isUsed?'used':'new'}"></span>${v}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        <div class="icon" style="background:#F5E8C8">💡</div>
+        下週建議菜色
+      </div>
+      <div class="sug-list">
+        ${suggestions.map(s=>`
+          <div class="sug-item">
+            <span class="meal-badge ${s.meal==='中餐'?'lunch-b':'dinner-b'}">${s.meal}</span>
+            <div class="dish-name">${s.name}</div>
+            <div class="reason">${s.reason}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="footer">
+      資料來源：${sheet}<br>
+      最後更新：${now.toLocaleString('zh-TW')}
+    </div>`;
+
+  document.getElementById('main-content').innerHTML=html;
+}
+
+function generateSuggestions(dishes,missingVeg,month){
+  const suggestions=[];
+  const usedNames=new Set(dishes.map(d=>d.name));
+
+  // 時令蔬菜建議
+  missingVeg.forEach(v=>{
+    suggestions.push({
+      meal:'中餐',
+      name:`清炒${v}`,
+      reason:`${month}月盛產，新鮮當季，建議加入菜單增加多樣性`
+    });
+  });
+
+  // 根據重複最多的菜提替換建議
+  const dc={};dishes.forEach(d=>{dc[d.name]=(dc[d.name]||0)+1;});
+  const topRepeat=Object.entries(dc).sort((a,b)=>b[1]-a[1])[0];
+  if(topRepeat&&topRepeat[1]>=3){
+    const replacements={
+      '油菜':'空心菜、地瓜葉、莧菜',
+      '高麗菜':'大白菜、芥藍、青花菜',
+      '地瓜葉':'空心菜、莧菜、油菜',
+      '空心菜':'地瓜葉、莧菜、高麗菜',
+    };
+    const alt=replacements[topRepeat[0]];
+    if(alt){
+      suggestions.push({
+        meal:'中餐',
+        name:`替換「${topRepeat[0]}」`,
+        reason:`本月已出現 ${topRepeat[1]} 次，建議改用 ${alt} 輪替`
+      });
+    }
+  }
+
+  // 固定建議
+  const fixedSugs=[
+    {meal:'晚餐',name:'蒸魚料理',reason:'清蒸方式保留食材原味，熱量低，適合作為輕食晚餐主菜'},
+    {meal:'中餐',name:'豆腐相關料理',reason:'豆腐富含蛋白質，價格實惠，可變化麻婆豆腐、豆腐湯等多種做法'},
+    {meal:'晚餐',name:'燉煮類主菜',reason:'燉煮料理口味豐富，可提前準備，節省廚房作業時間'},
+  ];
+  fixedSugs.forEach(s=>{if(!usedNames.has(s.name))suggestions.push(s);});
+
+  return suggestions.slice(0,6);
+}
+
+// Config
+function openConfig(){
+  document.getElementById('cfg-gas').value=gasUrl();
+  document.getElementById('cfg-sheet').value=sheetName();
+  document.getElementById('config-modal').classList.add('open');
+}
+function closeConfig(){document.getElementById('config-modal').classList.remove('open');}
+function saveConfig(){
+  const url=document.getElementById('cfg-gas').value.trim();
+  const sheet=document.getElementById('cfg-sheet').value.trim();
+  if(url)localStorage.setItem(GAS_KEY,url);
+  if(sheet)localStorage.setItem(SHEET_KEY,sheet);
+  closeConfig();
+  document.getElementById('main-content').innerHTML='<div class="loading"><div class="loading-ring"></div><p>載入中…</p></div>';
+  loadAndRender();
+}
+
+loadAndRender();
+</script>
+</body>
+</html>
