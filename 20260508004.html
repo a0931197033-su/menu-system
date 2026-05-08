@@ -946,7 +946,7 @@ async function genImage(dishName, btn){
   btn.innerHTML='<span class="spinner"></span>';
   const vegName=dishName.replace('清炒','');
   const imgDiv=document.getElementById('img-'+vegName);
-  const prompt=encodeURIComponent('台式家常料理'+dishName+'，真實食物攝影，白色圓盤盛裝，俯視角度，明亮自然光');
+  const prompt=encodeURIComponent('Taiwan home cooking '+dishName+', stir-fried vegetables, simple home style, white ceramic plate, top view, natural lighting, food photography, realistic');
   const imgUrl='https://image.pollinations.ai/prompt/'+prompt+'?width=400&height=400&nologo=true&seed='+Math.floor(Math.random()*10000);
   imgDiv.style.display='block';
   imgDiv.innerHTML='<div class="ldrow"><span class="spinner"></span>生成中，約需15秒…</div>';
