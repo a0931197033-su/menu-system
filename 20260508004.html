@@ -946,29 +946,26 @@ async function genImage(dishName, btn){
   btn.innerHTML='<span class="spinner"></span>';
   const vegName=dishName.replace('清炒','');
   const imgDiv=document.getElementById('img-'+vegName);
-  try{
-    const prompt=encodeURIComponent('台式家常料理'+dishName+'，真實食物攝影，白色圓盤盛裝，俯視角度，明亮自然光，高畫質');
-    const imgUrl=`https://image.pollinations.ai/prompt/${prompt}?width=400&height=400&nologo=true`;
-    const img=document.createElement('img');
+  const prompt=encodeURIComponent('台式家常料理'+dishName+'，真實食物攝影，白色圓盤盛裝，俯視角度，明亮自然光');
+  const imgUrl='https://image.pollinations.ai/prompt/'+prompt+'?width=400&height=400&nologo=true&seed='+Math.floor(Math.random()*10000);
+  imgDiv.style.display='block';
+  imgDiv.innerHTML='<div class="ldrow"><span class="spinner"></span>生成中，約需15秒…</div>';
+  const img=new Image();
+  img.crossOrigin='anonymous';
+  img.onload=()=>{
+    imgDiv.innerHTML='';
     img.style.cssText='width:100%;border-radius:8px;border:1px solid var(--border)';
-    img.onload=()=>{
-      imgDiv.style.display='block';
-      imgDiv.appendChild(img);
-      btn.innerHTML='✓ 已生成';
-    };
-    img.onerror=()=>{
-      toast('圖片生成失敗，請重試');
-      btn.disabled=false;
-      btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> 生成圖片';
-    };
-    imgDiv.innerHTML='<div class="ldrow"><span class="spinner"></span>生成中，約需15秒…</div>';
-    imgDiv.style.display='block';
-    img.src=imgUrl;
-  }catch(e){
-    toast('生成失敗：'+e.message);
+    imgDiv.appendChild(img);
+    btn.innerHTML='✓ 已生成';
+  };
+  img.onerror=()=>{
+    imgDiv.innerHTML='';
+    imgDiv.style.display='none';
+    toast('圖片生成失敗，請重試');
     btn.disabled=false;
-    btn.innerHTML='生成圖片';
-  }
+    btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> 生成圖片';
+  };
+  img.src=imgUrl;
 }
 
 function renderSettings(){
