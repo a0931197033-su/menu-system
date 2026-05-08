@@ -296,8 +296,8 @@ const now=new Date();
 const months=['一','二','三','四','五','六','七','八','九','十','十一','十二'];
 document.getElementById('date-badge').textContent=`${now.getFullYear()}年${months[now.getMonth()]}月`;
 
-function gasUrl(){return localStorage.getItem(GAS_KEY)||'';}
-function sheetName(){return localStorage.getItem(SHEET_KEY)||'';}
+function gasUrl(){return localStorage.getItem(GAS_KEY)||'https://script.google.com/macros/s/AKfycbzPr8wwUhNxNeKIsnNj9z-FNqKvcVysggbNqHxIv0ZXND1UhtvGH8CnEDiohjEjAWhx5g/exec';}
+function sheetName(){return localStorage.getItem(SHEET_KEY)||'\u300c5\u6708\u4efd\u83dc\u55ae\u300d\u7684\u526f\u672c';}
 
 function toDate(mmdd){
   if(!mmdd)return new Date(0);
