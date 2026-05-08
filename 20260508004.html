@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>菜單審核系統｜總務專用</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#F7F5F0;--surface:#fff;--surface2:#F0EDE6;--border:#E2DDD6;
+  --text:#1A1814;--text2:#6B6560;--text3:#A09A93;
+  --accent:#2D5A3D;--accent-light:#E8F0EB;
+  --warn:#C4622A;--warn-light:#FBF0EA;
+  --info:#1E4A7A;--info-light:#EAF0F8;
+  --mono:'DM Mono',monospace;--sans:'Noto Sans TC',sans-serif;
+  --r:10px;--rl:16px;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{background:var(--text);padding:24px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.logo{padding:0 20px 24px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.logo h1{font-size:15px;font-weight:500;color:#fff}
+.logo p{font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;font-family:var(--mono)}
+nav{padding:16px 0;flex:1}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;transition:all .15s;border-left:2px solid transparent}
+.ni:hover{color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.04)}
+.ni.active{color:#fff;border-left-color:var(--accent);background:rgba(255,255,255,0.06)}
+.ni svg{width:15px;height:15px;flex-shrink:0}
+.sidebar-foot{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.08)}
+.conn-dot{display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,0.35)}
+.dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.2);flex-shrink:0;transition:background .3s}
+.dot.on{background:#4ade80}
+.main{padding:32px 36px;overflow-y:auto;min-width:0}
+.page{display:none}.page.active{display:block}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px}
+.ph-left h2{font-size:22px;font-weight:500;letter-spacing:-0.02em}
+.ph-left p{font-size:13px;color:var(--text2);margin-top:3px}
+.ph-right{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--r);font-size:13px;font-family:var(--sans);cursor:pointer;transition:all .15s;border:none;font-weight:400;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#234830}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}.btn-ghost:hover{background:var(--surface2);color:var(--text)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn svg{width:14px;height:14px}
+.sel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;font-size:13px;font-family:var(--sans);color:var(--text);outline:none}
+.sel:focus{border-color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.sc .lbl{font-size:11px;color:var(--text3);font-family:var(--mono);letter-spacing:0.05em;margin-bottom:5px}
+.sc .val{font-size:24px;font-weight:500;letter-spacing:-0.03em;line-height:1}
+.sc .sub{font-size:11px;color:var(--text3);margin-top:3px}
+.sc.warn .val{color:var(--warn)}.sc.good .val{color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:20px}
+.card h3{font-size:14px;font-weight:500;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card h3 svg{width:15px;height:15px;color:var(--text2)}
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.fg label{font-size:11px;color:var(--text2);font-family:var(--mono);letter-spacing:0.04em}
+.fg input,.fg select{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:13px;font-family:var(--sans);color:var(--text);outline:none}
+.fg input:focus,.fg select:focus{border-color:var(--accent)}
+.upload-drop{border:1.5px dashed var(--border);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg);position:relative}
+.upload-drop:hover,.upload-drop.over{border-color:var(--accent);background:var(--accent-light)}
+.upload-drop svg{width:28px;height:28px;color:var(--text3);margin:0 auto 8px;display:block}
+.upload-drop p{font-size:12px;color:var(--text3)}
+.upload-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.preview-box{display:none;gap:14px;align-items:flex-start;margin-top:14px;padding:14px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border)}
+.preview-box img{width:72px;height:72px;object-fit:cover;border-radius:8px;flex-shrink:0}
+.ai-result{background:var(--accent-light);border:1px solid #c4d9c9;border-radius:var(--r);padding:14px;margin-top:12px;display:none}
+.ai-lbl{font-size:10px;font-family:var(--mono);color:var(--accent);letter-spacing:0.08em;margin-bottom:8px}
+.dish-tags{display:flex;flex-wrap:wrap;gap:6px}
+.dtag{background:#fff;border:1px solid #c4d9c9;border-radius:20px;padding:4px 12px;font-size:12px;color:var(--accent);cursor:pointer;transition:all .15s}
+.dtag:hover,.dtag.sel{background:var(--accent);color:#fff}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.photo-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.photo-card img{width:100%;height:120px;object-fit:cover;display:block}
+.photo-card .pc-info{padding:10px 12px}
+.photo-card .pc-date{font-size:11px;font-family:var(--mono);color:var(--text3)}
+.photo-card .pc-meal{font-size:12px;font-weight:500;margin:2px 0 4px}
+.photo-card .pc-dishes{font-size:11px;color:var(--text2)}
+.week-section{margin-bottom:24px}
+.week-label{font-size:11px;font-family:var(--mono);color:var(--text3);letter-spacing:0.05em;margin-bottom:8px}
+.week-wrap{overflow-x:auto}
+.wtable{border-collapse:collapse;width:100%;min-width:600px}
+.wtable th{padding:8px 12px;font-size:11px;font-weight:500;color:var(--text2);border:1px solid var(--border);background:var(--surface2);text-align:left;white-space:nowrap}
+.wtable th.dh{background:var(--text);color:rgba(255,255,255,0.8);font-family:var(--mono);font-size:11px;min-width:150px}
+.wtable td{border:1px solid var(--border);vertical-align:top;padding:0;background:var(--surface)}
+.mb{padding:8px 10px;border-bottom:1px solid var(--border)}
+.mb:last-child{border-bottom:none}
+.meal-lbl{font-size:10px;display:inline-block;padding:1px 7px;border-radius:10px;margin-bottom:5px}
+.ml{background:#FFF8E7;color:#92621A;border:1px solid #F0D898}
+.md{background:#EEF0FB;color:#3A45A0;border:1px solid #C8CCF0}
+.dish-r{display:flex;align-items:baseline;gap:5px;margin-bottom:3px}
+.dish-r:last-child{margin-bottom:0}
+.dcat{font-size:10px;color:var(--text3);min-width:28px;flex-shrink:0}
+.dname{font-size:12px}
+.dname.rp{color:var(--warn);font-weight:500}
+.rbadge{font-size:9px;background:var(--warn-light);color:var(--warn);border:1px solid #E8C4AB;border-radius:8px;padding:0 5px;margin-left:3px}
+.dl{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.dlh{display:grid;grid-template-columns:90px 56px 56px 1fr 90px;padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:11px;color:var(--text3);font-family:var(--mono)}
+.dlr{display:grid;grid-template-columns:90px 56px 56px 1fr 90px;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center;transition:background .1s}
+.dlr:last-child{border-bottom:none}
+.dlr:hover{background:var(--bg)}
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ac{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:18px}
+.ac h4{font-size:13px;font-weight:500;margin-bottom:14px;color:var(--text2)}
+.br{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.br .bn{flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bbg{flex:2;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.bf{height:100%;border-radius:3px}
+.bc{font-size:11px;font-family:var(--mono);color:var(--text3);min-width:28px;text-align:right}
+.si{padding:9px 12px;background:var(--bg);border-radius:var(--r);border-left:3px solid var(--accent);margin-bottom:8px}
+.si .sn{font-size:13px;font-weight:500}
+.si .sr{font-size:11px;color:var(--text2);margin-top:2px}
+.steps{background:var(--info-light);border:1px solid #c0d0e8;border-radius:var(--r);padding:14px 16px;margin-bottom:18px;font-size:13px;color:var(--info);line-height:1.9}
+.steps strong{display:block;margin-bottom:4px}
+pre.gas{background:#1A1814;color:#a8d8a8;padding:14px;border-radius:var(--r);font-size:11px;font-family:var(--mono);line-height:1.7;overflow-x:auto;white-space:pre-wrap;margin-bottom:8px}
+.empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px}
+.spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ldrow{display:flex;align-items:center;gap:8px;padding:20px;font-size:13px;color:var(--text3)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:10px 16px;border-radius:var(--r);font-size:13px;z-index:999;transform:translateY(60px);opacity:0;transition:all .25s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.ctrl{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.upload-progress{display:none;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-top:10px}
+.progress-bar{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+
+/* ── Mobile bottom nav ── */
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--text);border-top:1px solid rgba(255,255,255,0.1);z-index:100;padding:6px 0 env(safe-area-inset-bottom)}
+.mobile-nav-items{display:flex;justify-content:space-around}
+.mni{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;font-size:10px;color:rgba(255,255,255,0.45);cursor:pointer;border-radius:8px;transition:all .15s;min-width:56px}
+.mni svg{width:20px;height:20px}
+.mni.active{color:#fff}
+.mni span{font-family:var(--sans)}
+
+@media(max-width:768px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .main{padding:16px 16px 80px}
+  .mobile-nav{display:block}
+  .stats{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px}
+  .sc .val{font-size:20px}
+  .ph{flex-direction:column;gap:10px;margin-bottom:16px}
+  .ph-left h2{font-size:18px}
+  .ph-right{width:100%;justify-content:space-between}
+  .ph-right select{flex:1}
+  .week-section{margin-bottom:16px}
+  .wtable th,.wtable td{font-size:11px}
+  .wtable th.dh{min-width:110px}
+  .dcat{min-width:20px;font-size:9px}
+  .dname{font-size:11px}
+  .rbadge{font-size:8px;padding:0 4px}
+  .dl{border-radius:var(--r)}
+  .dlh{display:none}
+  .dlr{grid-template-columns:1fr;gap:2px;padding:10px 12px;border-bottom:1px solid var(--border)}
+  .dlr span:first-child{font-size:11px;color:var(--text3)}
+  .card{padding:16px}
+  .upload-drop{padding:16px}
+  .agrid{grid-template-columns:1fr}
+  .settings-card,.scard{max-width:100%}
+  .photo-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  pre.gas{font-size:10px}
+  .ctrl{gap:8px}
+  .ctrl input,.ctrl select{font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<aside class="sidebar">
+  <div class="logo">
+    <h1>菜單審核系統</h1>
+    <p>STAFF ONLY · INTERNAL</p>
+  </div>
+  <nav>
+    <div class="ni active" onclick="showPage('review',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>菜單審核
+    </div>
+    <div class="ni" onclick="showPage('photos',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>照片記錄
+    </div>
+    <div class="ni" onclick="showPage('list',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>菜色清單
+    </div>
+    <div class="ni" onclick="showPage('analysis',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>分析建議
+    </div>
+    <div class="ni" onclick="showPage('settings',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>設定
+    </div>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="conn-dot"><span class="dot" id="cdot"></span><span id="clabel">尚未連線</span></div>
+  </div>
+</aside>
+
+<!-- Mobile bottom nav -->
+<div class="mobile-nav">
+  <div class="mobile-nav-items">
+    <div class="mni active" id="mni-review" onclick="showPage('review',this,'mni-review')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>審核</span>
+    </div>
+    <div class="mni" id="mni-photos" onclick="showPage('photos',this,'mni-photos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      <span>照片</span>
+    </div>
+    <div class="mni" id="mni-list" onclick="showPage('list',this,'mni-list')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      <span>清單</span>
+    </div>
+    <div class="mni" id="mni-analysis" onclick="showPage('analysis',this,'mni-analysis')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      <span>分析</span>
+    </div>
+    <div class="mni" id="mni-settings" onclick="showPage('settings',this,'mni-settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <span>設定</span>
+    </div>
+  </div>
+</div>
+
+<main class="main">
+
+  <!-- 菜單審核 -->
+  <div class="page active" id="page-review">
+    <div class="ph">
+      <div class="ph-left"><h2>菜單審核</h2><p>讀取廚師填寫的菜單，自動標示 10 天內重複菜色</p></div>
+      <div class="ph-right">
+        <select class="sel" id="month-sel"></select>
+        <button class="btn btn-primary" onclick="loadData()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>更新
+        </button>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="sc"><div class="lbl">本月菜色</div><div class="val" id="s-total">—</div><div class="sub">道不重複菜色</div></div>
+      <div class="sc warn"><div class="lbl">重複菜色</div><div class="val" id="s-repeat">—</div><div class="sub">10天內出現 ≥2次</div></div>
+      <div class="sc"><div class="lbl">油炸比例</div><div class="val" id="s-fried">—</div><div class="sub">本月累計</div></div>
+      <div class="sc good"><div class="lbl">解析筆數</div><div class="val" id="s-rows">—</div><div class="sub">道菜</div></div>
+    </div>
+    <div id="review-out"><div class="empty">請先在「設定」完成連線，再按「更新」</div></div>
+  </div>
+
+  <!-- 照片記錄 -->
+  <div class="page" id="page-photos">
+    <div class="ph">
+      <div class="ph-left"><h2>照片記錄</h2><p>上傳照片，每張各自選對應菜名，一次全部上傳到 Drive</p></div>
+    </div>
+
+    <div class="card">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        上傳新照片
+      </h3>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="fg">
+          <label>月份分頁</label>
+          <select class="sel" id="photo-sheet" onchange="loadPhotoDishes()" style="width:100%"></select>
+        </div>
+        <div class="fg">
+          <label>日期</label>
+          <select class="sel" id="photo-date" onchange="refreshPhotoCards()" style="width:100%">
+            <option value="">請先選月份</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>餐別</label>
+          <select class="sel" id="photo-meal" onchange="refreshPhotoCards()" style="width:100%">
+            <option value="中餐">中餐</option>
+            <option value="晚餐">晚餐</option>
+            <option value="下午茶">下午茶</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="upload-drop" id="drop-zone">
+        <input type="file" accept="image/*" id="file-input" multiple onchange="handleFiles(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <p>點擊或拖曳照片至此處（可多選）</p>
+      </div>
+
+      <!-- 每張照片 + 各自的菜名下拉選單 -->
+      <div id="photo-cards" style="display:none;margin-top:16px">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">每張照片選對應菜名：</div>
+        <div id="photo-card-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-primary" onclick="savePhoto()" id="save-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          全部上傳到 Drive
+        </button>
+      </div>
+      <div class="upload-progress" id="upload-progress">
+        <span class="spinner"></span>
+        <span id="progress-text">上傳中…</span>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        已上傳照片
+      </h3>
+      <div class="photo-grid" id="photo-grid">
+        <div class="empty" style="grid-column:1/-1">尚未上傳任何照片</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 菜色清單 -->
+  <div class="page" id="page-list">
+    <div class="ph"><div class="ph-left"><h2>菜色清單</h2><p>逐筆列出，可篩選重複項目</p></div></div>
+    <div class="ctrl">
+      <input type="text" id="ls-search" placeholder="搜尋菜名…" oninput="renderList()" class="sel" style="max-width:180px">
+      <select class="sel" id="ls-meal" onchange="renderList()">
+        <option value="">全部餐別</option>
+        <option value="中餐">中餐</option>
+        <option value="晚餐">晚餐</option>
+        <option value="下午茶">下午茶</option>
+      </select>
+      <select class="sel" id="ls-rp" onchange="renderList()">
+        <option value="">全部</option>
+        <option value="1">只看重複</option>
+      </select>
+    </div>
+    <div class="dl">
+      <div class="dlh"><span>日期</span><span>餐別</span><span>類別</span><span>菜名</span><span>重複狀態</span></div>
+      <div id="list-body"><div class="empty">尚無資料</div></div>
+    </div>
+  </div>
+
+  <!-- 分析建議 -->
+  <div class="page" id="page-analysis">
+    <div class="ph">
+      <div class="ph-left"><h2>分析建議</h2><p>AI 分析菜色多樣性，推薦補充菜色</p></div>
+      <div class="ph-right">
+        <button class="btn btn-primary" onclick="runAnalysis()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>AI 分析
+        </button>
+      </div>
+    </div>
+    <div id="analysis-out"><div class="empty">載入菜單後，按「AI 分析」</div></div>
+  </div>
+
+  <!-- 設定 -->
+  <div class="page" id="page-settings">
+    <div class="ph"><div class="ph-left"><h2>設定</h2><p>連接 Google Sheets 讀取廚師菜單 ＆ 上傳照片到 Drive</p></div></div>
+
+    <div class="card" style="max-width:600px">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 17H7A5 5 0 017 7h2M15 7h2a5 5 0 010 10h-2M8 12h8"/></svg>
+        GAS 部署網址
+      </h3>
+      <div class="steps">
+        <strong>設定步驟（只需做一次）</strong>
+        1. 開啟 Google Sheets → 「擴充功能」→「Apps Script」<br>
+        2. 貼入下載的 <strong>GAS程式碼.gs</strong> 內容，按儲存<br>
+        3. 「部署」→「新增部署作業」→ 類型「網路應用程式」<br>
+        4. 執行身分「我」，存取權「所有人」→ 部署，複製網址<br>
+        5. 貼入下方，按「儲存並測試」
+      </div>
+      <div class="fg">
+        <label>GAS 部署網址</label>
+        <input type="text" id="gas-url" placeholder="https://script.google.com/macros/s/…/exec">
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveAndTest()">儲存並測試連線</button>
+        <button class="btn btn-ghost" onclick="clearConn()">清除</button>
+        <span id="test-msg" style="font-size:12px;color:var(--text3)"></span>
+      </div>
+    </div>
+
+    <div class="card" style="max-width:600px">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        菜單分頁名稱
+      </h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">對應 Sheets 底部的分頁名稱，例如「5月份菜單」</p>
+      <div id="tab-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="new-tab" placeholder="輸入分頁名稱" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:13px;font-family:var(--sans);color:var(--text);outline:none">
+        <button class="btn btn-ghost" onclick="addTab()">新增</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+<div class="toast" id="toast-el"></div>
+
+<script>
+const GAS_KEY='gas_v3',TABS_KEY='tabs_v2',CACHE_KEY='cache_v2',PHOTOS_KEY='photos_v1';
+const HARDCODED_GAS='https://script.google.com/macros/s/AKfycbwZ8bYb5EGV3EjT3wy6oxcAWCiEbKge-TyThwC1ikhcHamaFcjgeJSSk4jfVVSiMb7Kyw/exec';
+let allDishes=[],selectedDishes=[],pendingFiles=[];
+let photoLog=[];
+
+function toast(msg){const t=document.getElementById('toast-el');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+function gasUrl(){return localStorage.getItem(GAS_KEY)||HARDCODED_GAS;}
+function getTabs(){try{return JSON.parse(localStorage.getItem(TABS_KEY)||'[]');}catch(e){return[];}}
+function setDot(on){document.getElementById('cdot').classList.toggle('on',on);document.getElementById('clabel').textContent=on?'Sheets 已連線':'尚未連線';}
+
+function showPage(p,el,mniId){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.mni').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  if(el)el.classList.add('active');
+  // Sync mobile nav
+  const mni=document.getElementById(mniId||'mni-'+p);
+  if(mni)mni.classList.add('active');
+  if(p==='settings')renderSettings();
+  if(p==='list')renderList();
+  if(p==='photos'){renderPhotoLog();initPhotoPage();}
+}
+
+// ── Month selector ────────────────────────────────
+function buildMonthSel(){
+  const sel=document.getElementById('month-sel');
+  const tabs=getTabs();sel.innerHTML='';
+  if(!tabs.length){sel.innerHTML='<option>尚無分頁</option>';return;}
+  tabs.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
+}
+
+// ── Photo page ────────────────────────────────────
+let photoSheetData={};
+let currentDishOptions=[];
+
+function initPhotoPage(){
+  const sel=document.getElementById('photo-sheet');
+  if(!sel)return;
+  const tabs=getTabs();
+  sel.innerHTML='<option value="">選擇月份</option>';
+  tabs.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
+}
+
+async function loadPhotoDishes(){
+  const sheet=document.getElementById('photo-sheet').value;
+  if(!sheet)return;
+  if(photoSheetData[sheet]){populateDateSel(photoSheetData[sheet]);return;}
+  const url=gasUrl();
+  try{
+    const resp=await fetch(url+'?sheet='+encodeURIComponent(sheet));
+    const json=await resp.json();
+    if(json.error)throw new Error(json.error);
+    const dishes=parseRows(json.rows||[]);
+    photoSheetData[sheet]=dishes;
+    populateDateSel(dishes);
+    toast('✓ 載入完成');
+  }catch(e){toast('載入失敗：'+e.message);}
+}
+
+function populateDateSel(dishes){
+  const dates=[...new Set(dishes.map(d=>d.date))].sort((a,b)=>{
+    const[am,ad]=a.split('/').map(Number),[bm,bd]=b.split('/').map(Number);
+    return am!==bm?am-bm:ad-bd;
+  });
+  const sel=document.getElementById('photo-date');
+  sel.innerHTML='<option value="">選擇日期</option>';
+  dates.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
+  refreshPhotoCards();
+}
+
+function getDishOptions(){
+  const sheet=document.getElementById('photo-sheet').value;
+  const date=document.getElementById('photo-date').value;
+  const meal=document.getElementById('photo-meal').value;
+  if(!sheet||!date)return[];
+  return(photoSheetData[sheet]||[]).filter(d=>d.date===date&&d.meal===meal).map(d=>d.name);
+}
+
+function refreshPhotoCards(){
+  currentDishOptions=getDishOptions();
+  // Refresh dropdowns on existing photo cards
+  document.querySelectorAll('.photo-card-sel').forEach(sel=>{
+    const cur=sel.value;
+    sel.innerHTML='<option value="">選擇菜名</option>'+currentDishOptions.map(n=>`<option value="${n}">${n}</option>`).join('');
+    if(cur)sel.value=cur;
+  });
+}
+
+function handleFiles(input){
+  const files=Array.from(input.files);
+  if(!files.length)return;
+  pendingFiles=[];
+  const cards=document.getElementById('photo-card-list');
+  const area=document.getElementById('photo-cards');
+  cards.innerHTML='';
+  area.style.display='block';
+  currentDishOptions=getDishOptions();
+  files.forEach((file,i)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const b64=e.target.result.split(',')[1];
+      pendingFiles[i]={file,base64:b64,name:file.name,mimeType:file.type||'image/jpeg'};
+      const optHtml='<option value="">選擇菜名</option>'+currentDishOptions.map(n=>`<option value="${n}">${n}</option>`).join('');
+      const card=document.createElement('div');
+      card.style.cssText='display:flex;align-items:center;gap:12px;background:var(--bg);border-radius:var(--r);padding:10px;border:1px solid var(--border)';
+      card.innerHTML=`
+        <img src="${e.target.result}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</div>
+          <select class="sel photo-card-sel" data-idx="${i}" style="width:100%">${optHtml}</select>
+        </div>`;
+      cards.appendChild(card);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Keep drag/drop working
+const dz=document.getElementById('drop-zone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{
+  e.preventDefault();dz.classList.remove('over');
+  const files=Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/'));
+  if(files.length){
+    const dt=new DataTransfer();
+    files.forEach(f=>dt.items.add(f));
+    document.getElementById('file-input').files=dt.files;
+    handleFiles(document.getElementById('file-input'));
+  }
+});
+
+async function runAIMulti(){
+  if(!pendingFiles.length)return toast('請先選擇照片');
+  const btn=document.getElementById('ai-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> 辨識中…';
+  const url=gasUrl();
+  const allDishesFound=[];
+  try{
+    for(const pf of pendingFiles){
+      if(!pf)continue;
+      const resp=await fetch(url,{
+        method:'POST',
+        body:JSON.stringify({
+          action:'recognize',
+          image:pf.base64,
+          mimeType:pf.mimeType||pf.file.type||'image/jpeg'
+        })
+      });
+      const data=await resp.json();
+      if(data.error)throw new Error(data.error);
+      (data.dishes||[]).forEach(d=>{if(!allDishesFound.includes(d))allDishesFound.push(d);});
+    }
+    renderDishTags(allDishesFound);
+    document.getElementById('ai-result').style.display='block';
+    toast('✓ 辨識完成，共 '+allDishesFound.length+' 道菜');
+  }catch(e){
+    toast('辨識失敗：'+e.message);
+  }finally{
+    btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> AI 辨識所有照片菜名';
+  }
+}
+
+function renderDishTags(dishes){
+  selectedDishes=[...dishes];
+  const c=document.getElementById('dish-tags');c.innerHTML='';
+  dishes.forEach(d=>{
+    const el=document.createElement('span');el.className='dtag sel';el.textContent=d;
+    el.onclick=()=>{
+      const i=selectedDishes.indexOf(d);
+      if(i>=0){selectedDishes.splice(i,1);el.classList.remove('sel');}
+      else{selectedDishes.push(d);el.classList.add('sel');}
+    };
+    c.appendChild(el);
+  });
+}
+
+function addManualDish(){
+  const inp=document.getElementById('manual-dish');
+  const v=inp.value.trim();if(!v)return;
+  if(!selectedDishes.includes(v)){
+    selectedDishes.push(v);
+    const el=document.createElement('span');el.className='dtag sel';el.textContent=v;
+    el.onclick=()=>{
+      const i=selectedDishes.indexOf(v);
+      if(i>=0){selectedDishes.splice(i,1);el.classList.remove('sel');}
+      else{selectedDishes.push(v);el.classList.add('sel');}
+    };
+    document.getElementById('dish-tags').appendChild(el);
+    document.getElementById('ai-result').style.display='block';
+  }
+  inp.value='';
+}
+
+// ── Save & upload to Drive ────────────────────────
+async function savePhoto(){
+  if(!pendingFiles.length)return toast('請先選擇照片');
+  const url=gasUrl();
+  if(!url)return toast('請先設定 GAS 網址');
+  const dateVal=document.getElementById('photo-date').value;
+  const meal=document.getElementById('photo-meal').value;
+  if(!dateVal)return toast('請選擇日期');
+  const now=new Date();
+  const[mo,d]=(dateVal).split('/').map(Number);
+  const date=`${now.getFullYear()}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const month=`${now.getFullYear()}-${String(mo).padStart(2,'0')}`;
+
+  // Get dish from each photo's dropdown
+  const sels=document.querySelectorAll('.photo-card-sel');
+
+  const prog=document.getElementById('upload-progress');
+  const fill=document.getElementById('progress-fill');
+  const ptxt=document.getElementById('progress-text');
+  prog.style.display='flex';fill.style.width='5%';ptxt.textContent='上傳中…';
+  document.getElementById('save-btn').disabled=true;
+
+  try{
+    let uploaded=0;
+    for(let i=0;i<pendingFiles.length;i++){
+      const pf=pendingFiles[i];if(!pf)continue;
+      const dish=(sels[i]&&sels[i].value)||'';
+      const ext=(pf.mimeType||'image/jpeg').split('/')[1]||'jpg';
+      const safeDish=dish.replace(/[^\w\u4e00-\u9fff]/g,'');
+      const filename=`${date.replace(/-/g,'')}_${meal}_${safeDish||i+1}.${ext}`;
+      fill.style.width=Math.round((i+1)/pendingFiles.length*90)+'%';
+      ptxt.textContent=`上傳第 ${i+1}/${pendingFiles.length} 張${dish?' ('+dish+')':''}…`;
+      await fetch(url,{
+        method:'POST',
+        body:JSON.stringify({image:pf.base64,mimeType:pf.mimeType||'image/jpeg',filename,date,meal,chef:'',dishes:dish?[dish]:[],month})
+      });
+      uploaded++;
+      photoLog.unshift({date,meal,dishes:dish?[dish]:[],ts:Date.now()});
+    }
+    fill.style.width='100%';ptxt.textContent=`✓ 已上傳 ${uploaded} 張`;
+    try{localStorage.setItem(PHOTOS_KEY,JSON.stringify(photoLog.slice(0,200)));}catch(e){}
+    renderPhotoLog();
+    toast(`✓ ${uploaded} 張照片已存到 Drive`);
+    setTimeout(()=>{
+      prog.style.display='none';fill.style.width='0%';
+      document.getElementById('photo-cards').style.display='none';
+      document.getElementById('photo-card-list').innerHTML='';
+      document.getElementById('file-input').value='';
+      pendingFiles=[];
+    },1500);
+  }catch(e){
+    ptxt.textContent='上傳失敗：'+e.message;fill.style.width='0%';
+    toast('上傳失敗');
+  }finally{
+    document.getElementById('save-btn').disabled=false;
+  }
+}
+
+// ── Photo log ─────────────────────────────────────
+function renderPhotoLog(){
+  const grid=document.getElementById('photo-grid');
+  if(!photoLog.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">尚未上傳任何照片</div>';return;}
+  grid.innerHTML=photoLog.map(p=>`
+    <div class="photo-card">
+      ${p.driveUrl?`<a href="${p.driveUrl}" target="_blank"><img src="${p.driveUrl}" alt="" onerror="this.style.display='none'"></a>`:'<div style="height:120px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text3)">無預覽</div>'}
+      <div class="pc-info">
+        <div class="pc-date">${p.date}</div>
+        <div class="pc-meal">${p.meal}${p.chef?' · '+p.chef:''}</div>
+        <div class="pc-dishes">${p.dishes.join('、')}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Load Sheets data ──────────────────────────────
+async function loadData(){
+  const url=gasUrl();
+  if(!url){toast('請先設定 GAS 網址');return;}
+  const sheet=document.getElementById('month-sel').value;
+  if(!sheet||sheet==='尚無分頁'){toast('請先新增分頁名稱');return;}
+  document.getElementById('review-out').innerHTML='<div class="ldrow"><span class="spinner"></span>從 Sheets 讀取中…</div>';
+  try{
+    const resp=await fetch(url+'?sheet='+encodeURIComponent(sheet));
+    const json=await resp.json();
+    if(json.error)throw new Error(json.error);
+    allDishes=parseRows(json.rows||[]);
+    try{localStorage.setItem(CACHE_KEY,JSON.stringify({sheet,dishes:allDishes}));}catch(e){}
+    renderReview();renderStats();setDot(true);
+    toast('✓ 已載入 '+allDishes.length+' 道菜色');
+  }catch(e){
+    document.getElementById('review-out').innerHTML=`<div class="empty">讀取失敗：${e.message}</div>`;
+    toast('讀取失敗');
+  }
+}
+
+// ── Parse rows ────────────────────────────────────
+function parseRows(rows){
+  if(!rows||rows.length<2)return[];
+  const dishes=[],mealKw=['中餐','晚餐','下午茶'],catKw=['主餐','副餐','時蔬','湯品','點心'];
+
+  function toMMDD(s){
+    if(!s)return'';
+    s=s.toString().trim();
+    if(/^\d+\/\d+$/.test(s))return s;
+    const months={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+    const m=s.match(/(\w{3})\s+(\d{1,2})\s+(\d{4})/);
+    if(m&&months[m[1]])return months[m[1]]+'/'+parseInt(m[2]);
+    return'';
+  }
+
+  // Detect format type
+  // Format A (5月): has "菜單負責人" rows, date at col1,4,7...
+  // Format B (2月): no "菜單負責人", date at col0,3,6... (A,D,G...)
+  const hasChefHeader=rows.some(r=>r&&(r[0]||'').toString().trim()==='菜單負責人');
+
+  if(hasChefHeader){
+    // ── Format A (5月格式) ──────────────────────
+    let currentDates={},currentChef='';
+    // Track current meal per date column across rows
+    let mealByDateCol={};
+
+    for(let r=0;r<rows.length;r++){
+      const row=rows[r];
+      if(!row||row.every(c=>!c))continue;
+      const first=(row[0]||'').toString().trim();
+
+      if(first==='菜單負責人'){
+        currentDates={};
+        mealByDateCol={};
+        for(let c=1;c<row.length;c+=3){
+          const d=toMMDD((row[c]||'').toString());
+          if(d)currentDates[c]=d;
+        }
+        continue;
+      }
+      if(first)currentChef=first;
+
+      for(let c=1;c<row.length-1;c++){
+        const v=(row[c]||'').toString().trim();
+        const block=Math.floor((c-1)/3);
+        const dateCol=1+block*3;
+
+        // Update meal state when we see a meal keyword
+        if(mealKw.includes(v)){
+          mealByDateCol[dateCol]=v;
+        }
+
+        if(catKw.includes(v)){
+          const dishName=(row[c+1]||'').toString().trim();
+          if(!dishName||dishName==='菜色'||dishName==='菜名')continue;
+          const date=currentDates[dateCol]||'';
+          if(!date)continue;
+          const meal=mealByDateCol[dateCol]||'中餐';
+          dishes.push({date,meal,cat:v,name:dishName,chef:currentChef});
+        }
+      }
+    }
+  } else {
+    // ── Format B (2月格式) ──────────────────────
+    let currentDates={};
+    let mealByDateCol={};
+
+    for(let r=0;r<rows.length;r++){
+      const row=rows[r];
+      if(!row||row.every(c=>!c))continue;
+
+      const isDateRow=toMMDD((row[0]||'').toString())!=='';
+      if(isDateRow){
+        currentDates={};
+        mealByDateCol={};
+        for(let c=0;c<row.length;c+=3){
+          const d=toMMDD((row[c]||'').toString());
+          if(d)currentDates[c]=d;
+        }
+        continue;
+      }
+
+      for(let c=0;c<row.length;c++){
+        const v=(row[c]||'').toString().trim();
+        const dateCol=Math.floor(c/3)*3;
+
+        if(mealKw.includes(v)){
+          mealByDateCol[dateCol]=v;
+        }
+
+        if(catKw.includes(v)){
+          const dishName=(row[c+1]||'').toString().trim();
+          if(!dishName)continue;
+          const date=currentDates[dateCol]||'';
+          if(!date)continue;
+          const meal=mealByDateCol[dateCol]||'中餐';
+          dishes.push({date,meal,cat:v,name:dishName,chef:''});
+        }
+      }
+    }
+  }
+
+  const seen=new Set();
+  return dishes.filter(d=>{
+    const k=d.date+'|'+d.meal+'|'+d.cat+'|'+d.name;
+    if(seen.has(k))return false;seen.add(k);return true;
+  });
+}
+
+function toDate(s){const[m,d]=(s||'').split('/').map(Number);return new Date(new Date().getFullYear(),m-1,d);}
+function isRepeat(dish,list){const d0=toDate(dish.date);return list.some(x=>{if(x===dish||x.name!==dish.name)return false;return Math.abs(d0-toDate(x.date))/86400000>0&&Math.abs(d0-toDate(x.date))/86400000<=10;});}
+
+function renderReview(){
+  if(!allDishes.length){document.getElementById('review-out').innerHTML='<div class="empty">未解析到菜色</div>';return;}
+  const byDate={};
+  allDishes.forEach(d=>{
+    if(!byDate[d.date])byDate[d.date]={};
+    if(!byDate[d.date][d.meal])byDate[d.date][d.meal]=[];
+    byDate[d.date][d.meal].push(d);
+  });
+  // Track chef per date
+  const chefByDate={};
+  allDishes.forEach(d=>{if(d.chef&&!chefByDate[d.date])chefByDate[d.date]=d.chef;});
+
+  const dates=Object.keys(byDate).sort((a,b)=>{const[am,ad]=a.split('/').map(Number),[bm,bd]=b.split('/').map(Number);return am!==bm?am-bm:ad-bd;});
+  const weeks=[];for(let i=0;i<dates.length;i+=7)weeks.push(dates.slice(i,i+7));
+  let html='';
+  weeks.forEach((wk,wi)=>{
+    html+=`<div class="week-section"><div class="week-label">第 ${wi+1} 週</div><div class="week-wrap"><table class="wtable"><thead><tr><th style="width:56px">餐別</th>`;
+    wk.forEach(d=>{
+      const chef=chefByDate[d]?`<div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px">${chefByDate[d]}</div>`:'';
+      html+=`<th class="dh">${d}${chef}</th>`;
+    });
+    html+=`</tr></thead><tbody>`;
+    ['中餐','晚餐','下午茶'].forEach(meal=>{
+      if(!wk.some(d=>byDate[d]&&byDate[d][meal]))return;
+      html+=`<tr><td style="padding:8px 10px;background:var(--surface2);vertical-align:top"><span class="meal-lbl ${meal==='中餐'?'ml':'md'}">${meal}</span></td>`;
+      wk.forEach(date=>{
+        const md=(byDate[date]&&byDate[date][meal])||[];
+        html+=`<td><div class="mb">`;
+        if(!md.length)html+=`<span style="font-size:11px;color:var(--text3)">—</span>`;
+        else md.forEach(d=>{const rp=isRepeat(d,allDishes);html+=`<div class="dish-r"><span class="dcat">${d.cat}</span><span class="dname${rp?' rp':''}">${d.name}${rp?'<span class="rbadge">重複</span>':''}</span></div>`;});
+        html+=`</div></td>`;
+      });
+      html+=`</tr>`;
+    });
+    html+=`</tbody></table></div></div>`;
+  });
+  document.getElementById('review-out').innerHTML=html;
+}
+
+function renderStats(){
+  const unique=new Set(allDishes.map(d=>d.name)).size;
+  const rp=new Set(allDishes.filter(d=>isRepeat(d,allDishes)).map(d=>d.name)).size;
+  const fkw=['炸','酥','脆皮','排骨','雞排'];
+  const fp=allDishes.length?Math.round(allDishes.filter(d=>fkw.some(k=>d.name.includes(k))).length/allDishes.length*100):0;
+  document.getElementById('s-total').textContent=unique;
+  document.getElementById('s-repeat').textContent=rp;
+  document.getElementById('s-fried').textContent=fp+'%';
+  document.getElementById('s-rows').textContent=allDishes.length;
+}
+
+function renderList(){
+  const search=document.getElementById('ls-search').value.toLowerCase();
+  const meal=document.getElementById('ls-meal').value;
+  const onlyRp=document.getElementById('ls-rp').value==='1';
+  const f=allDishes.filter(d=>{
+    if(meal&&d.meal!==meal)return false;
+    if(search&&!d.name.toLowerCase().includes(search))return false;
+    if(onlyRp&&!isRepeat(d,allDishes))return false;
+    return true;
+  });
+  const body=document.getElementById('list-body');
+  if(!f.length){body.innerHTML='<div class="empty">沒有符合的資料</div>';return;}
+  body.innerHTML=f.map(d=>{
+    const rp=isRepeat(d,allDishes);
+    const mbc=d.meal==='中餐'?'background:#FFF8E7;color:#92621A':'background:#EEF0FB;color:#3A45A0';
+    return `<div class="dlr">
+      <span style="font-family:var(--mono);font-size:12px">${d.date}</span>
+      <span><span style="font-size:11px;padding:2px 6px;border-radius:10px;${mbc}">${d.meal}</span></span>
+      <span style="font-size:12px;color:var(--text3)">${d.cat}</span>
+      <span style="${rp?'color:var(--warn);font-weight:500':''}">${d.name}${rp?'<span style="font-size:10px;background:var(--warn-light);color:var(--warn);border-radius:8px;padding:0 6px;margin-left:6px;border:1px solid #E8C4AB">10天內重複</span>':''}</span>
+      <span style="font-size:12px;font-family:var(--mono);${rp?'color:var(--warn)':'color:var(--accent)'}">${rp?'⚠ 重複':'✓ 正常'}</span>
+    </div>`;
+  }).join('');
+}
+
+async function runAnalysis(){
+  if(!allDishes.length){toast('請先載入菜單');return;}
+  const out=document.getElementById('analysis-out');
+  out.innerHTML='<div class="ldrow"><span class="spinner"></span>分析中…</div>';
+  const dc={};allDishes.forEach(d=>{dc[d.name]=(dc[d.name]||0)+1;});
+  const sorted=Object.entries(dc).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  const rpNames=[...new Set(allDishes.filter(d=>isRepeat(d,allDishes)).map(d=>d.name))];
+
+  // Show frequency chart without AI
+  const mc=sorted[0]?.[1]||1;
+  const bars=sorted.slice(0,10).map(([n,c])=>{
+    const w=Math.round(c/mc*100),hi=c>=3;
+    return`<div class="br"><span class="bn">${n}</span><div class="bbg"><div class="bf" style="width:${w}%;background:${hi?'var(--warn)':'var(--accent)'}"></div></div><span class="bc">${c}次</span></div>`;
+  }).join('');
+
+  // Generate suggestions locally based on data
+  const mealTypes={};
+  allDishes.forEach(d=>{mealTypes[d.cat]=(mealTypes[d.cat]||0)+1;});
+  const suggestions=[];
+  if(rpNames.length>3)suggestions.push({name:'建議增加新菜色',reason:`有 ${rpNames.length} 道菜在10天內重複出現`});
+  const friedCount=allDishes.filter(d=>['炸','酥','脆皮'].some(k=>d.name.includes(k))).length;
+  if(friedCount/allDishes.length>0.15)suggestions.push({name:'減少油炸類料理',reason:`油炸比例偏高（${Math.round(friedCount/allDishes.length*100)}%），建議改用清蒸或燉煮`});
+  const topDish=sorted[0];
+  if(topDish&&topDish[1]>=4)suggestions.push({name:`調整「${topDish[0]}」出現頻率`,reason:`本月已出現 ${topDish[1]} 次，建議替換其他菜色`});
+  suggestions.push({name:'增加時令蔬菜種類',reason:'多樣化蔬菜有助於提升員工餐品質'});
+
+  const sugs=suggestions.map(s=>`<div class="si"><div class="sn">${s.name}</div><div class="sr">${s.reason}</div></div>`).join('');
+  const summary=rpNames.length>0?`本月有 ${rpNames.length} 道菜色在10天內重複，建議調整菜單多樣性`:'本月菜單多樣性良好';
+
+  out.innerHTML=`<div style="background:var(--info-light);border:1px solid #c0d0e8;border-radius:var(--r);padding:12px 16px;font-size:13px;color:var(--info);margin-bottom:16px">${summary}</div>
+  <div class="agrid"><div class="ac"><h4>菜色出現頻率</h4>${bars}</div><div class="ac"><h4>建議補充菜色</h4>${sugs}</div></div>`;
+}
+
+function renderSettings(){
+  document.getElementById('gas-url').value=gasUrl();
+  renderTabChips();
+}
+function renderTabChips(){
+  const tabs=getTabs();
+  document.getElementById('tab-chips').innerHTML=tabs.map(t=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px">${t}<button onclick="removeTab('${t}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px;line-height:1;padding:0">&times;</button></span>`).join('')||'<span style="font-size:12px;color:var(--text3)">尚未新增</span>';
+}
+function addTab(){const inp=document.getElementById('new-tab');const v=inp.value.trim();if(!v)return;const tabs=getTabs();if(!tabs.includes(v)){tabs.push(v);localStorage.setItem(TABS_KEY,JSON.stringify(tabs));}inp.value='';renderTabChips();buildMonthSel();}
+function removeTab(name){localStorage.setItem(TABS_KEY,JSON.stringify(getTabs().filter(t=>t!==name)));renderTabChips();buildMonthSel();}
+async function saveAndTest(){
+  const url=document.getElementById('gas-url').value.trim();if(!url)return toast('請輸入網址');
+  localStorage.setItem(GAS_KEY,url);
+  const msg=document.getElementById('test-msg');msg.textContent='測試中…';msg.style.color='var(--text3)';
+  try{await fetch(url+'?sheet=test');msg.textContent='✓ 連線成功';msg.style.color='var(--accent)';setDot(true);toast('連線成功');}
+  catch(e){msg.textContent='連線失敗，請確認網址';msg.style.color='var(--warn)';}
+}
+function clearConn(){localStorage.removeItem(GAS_KEY);document.getElementById('gas-url').value='';document.getElementById('test-msg').textContent='';setDot(false);toast('已清除');}
+
+(function(){
+  setDot(true);
+  if(!getTabs().length){
+    localStorage.setItem(TABS_KEY,JSON.stringify(['「1月份菜單」的副本','「2月份菜單」的副本','「3月份菜單」的副本','「4月份菜單」的副本','「5月份菜單」的副本','「6月份菜單」的副本','「7月份菜單」的副本','「8月份菜單」的副本','「9月份菜單」的副本','「10月份菜單」的副本','「11月份菜單」的副本','「12月份菜單」的副本']));
+  }
+  buildMonthSel();
+  document.getElementById('up-date').value=new Date().toISOString().slice(0,10);
+  try{photoLog=JSON.parse(localStorage.getItem(PHOTOS_KEY)||'[]');}catch(e){}
+  try{const c=JSON.parse(localStorage.getItem(CACHE_KEY)||'{}');if(c.dishes&&c.dishes.length){allDishes=c.dishes;renderReview();renderStats();}}catch(e){}
+})();
+</script>
+</body>
+</html>
