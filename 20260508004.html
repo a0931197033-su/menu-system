@@ -793,20 +793,19 @@ function parseRows(rows){
 
 function toDate(s){const[m,d]=(s||'').split('/').map(Number);return new Date(new Date().getFullYear(),m-1,d);}
 
-// 食材關鍵字群組（同群組視為相似）
+// 食材關鍵字群組（更嚴格：只有明確同類才算相似）
 const SIMILAR_GROUPS=[
-  ['咖哩','curry'],
-  ['炸','酥炸','脆皮','炸物'],
-  ['蒸魚','清蒸魚','蒸','清蒸'],
-  ['滷','紅燒','燉'],
-  ['炒飯','蛋炒飯','炒'],
-  ['湯麵','乾麵','麵'],
-  ['雞','雞肉','雞腿','雞翅','雞胸'],
-  ['豬','豬肉','排骨','里肌','松阪豬'],
-  ['牛','牛肉','牛柳'],
-  ['魚','魚肉','鯛魚','鱸魚','鮭魚'],
-  ['蝦','蝦仁','草蝦'],
-  ['豆腐','嫩豆腐','板豆腐'],
+  ['咖哩雞','咖哩豬','咖哩牛','咖哩蝦','咖哩海鮮'],
+  ['三杯雞','三杯豬','三杯小卷','三杯豆干','三杯'],
+  ['麻油雞','麻油豬','麻油腰花'],
+  ['照燒雞','照燒豬','照燒魚','照燒'],
+  ['紅燒肉','紅燒魚','紅燒雞','紅燒排骨'],
+  ['滷雞腿','滷豬腳','滷排骨','滷肉'],
+  ['蒸魚','清蒸魚','豆豉蒸魚','樹子蒸魚'],
+  ['炒飯','蛋炒飯','海鮮炒飯','揚州炒飯'],
+  ['打拋豬','打拋雞','打拋牛'],
+  ['宮保雞','宮保豬','宮保蝦'],
+  ['蔥爆牛','蔥爆豬','蔥爆雞'],
 ];
 
 function getSimilarGroup(name){
@@ -818,17 +817,14 @@ function getSimilarGroup(name){
 
 function isSimilar(a,b){
   if(a===b)return true;
+  // 只用食材關鍵字群組比對，不用共用字元
   const ga=getSimilarGroup(a);
   const gb=getSimilarGroup(b);
   if(ga&&gb&&ga===gb)return true;
-  // 共用關鍵字（超過2字）
-  for(let i=0;i<a.length-1;i++){
-    const chunk=a.slice(i,i+2);
-    if(b.includes(chunk))return true;
-  }
   return false;
 }
 
+// 食材關鍵字群組（更嚴格：只有明確同類才算相似）
 function isRepeat(dish,list){
   const d0=toDate(dish.date);
   return list.some(x=>{
