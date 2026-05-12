@@ -792,7 +792,67 @@ function parseRows(rows){
 }
 
 function toDate(s){const[m,d]=(s||'').split('/').map(Number);return new Date(new Date().getFullYear(),m-1,d);}
-function isRepeat(dish,list){const d0=toDate(dish.date);return list.some(x=>{if(x===dish||x.name!==dish.name)return false;return Math.abs(d0-toDate(x.date))/86400000>0&&Math.abs(d0-toDate(x.date))/86400000<=10;});}
+
+// 食材關鍵字群組（同群組視為相似）
+const SIMILAR_GROUPS=[
+  ['咖哩','curry'],
+  ['炸','酥炸','脆皮','炸物'],
+  ['蒸魚','清蒸魚','蒸','清蒸'],
+  ['滷','紅燒','燉'],
+  ['炒飯','蛋炒飯','炒'],
+  ['湯麵','乾麵','麵'],
+  ['雞','雞肉','雞腿','雞翅','雞胸'],
+  ['豬','豬肉','排骨','里肌','松阪豬'],
+  ['牛','牛肉','牛柳'],
+  ['魚','魚肉','鯛魚','鱸魚','鮭魚'],
+  ['蝦','蝦仁','草蝦'],
+  ['豆腐','嫩豆腐','板豆腐'],
+];
+
+function getSimilarGroup(name){
+  for(const g of SIMILAR_GROUPS){
+    if(g.some(k=>name.includes(k)))return g;
+  }
+  return null;
+}
+
+function isSimilar(a,b){
+  if(a===b)return true;
+  const ga=getSimilarGroup(a);
+  const gb=getSimilarGroup(b);
+  if(ga&&gb&&ga===gb)return true;
+  // 共用關鍵字（超過2字）
+  for(let i=0;i<a.length-1;i++){
+    const chunk=a.slice(i,i+2);
+    if(b.includes(chunk))return true;
+  }
+  return false;
+}
+
+function isRepeat(dish,list){
+  const d0=toDate(dish.date);
+  return list.some(x=>{
+    if(x===dish)return false;
+    if(x.name===dish.name){
+      const diff=Math.abs(d0-toDate(x.date))/86400000;
+      return diff>0&&diff<=10;
+    }
+    return false;
+  });
+}
+
+function isSimilarRepeat(dish,list){
+  const d0=toDate(dish.date);
+  return list.some(x=>{
+    if(x===dish||x.name===dish.name)return false;
+    const diff=Math.abs(d0-toDate(x.date))/86400000;
+    if(diff<=0||diff>10)return false;
+    return isSimilar(dish.name,x.name);
+  });
+}
+
+const FRIED_KW=['炸','酥','脆皮','雞排','排骨酥'];
+function isFried(name){return FRIED_KW.some(k=>name.includes(k));}
 
 function renderReview(){
   if(!allDishes.length){document.getElementById('review-out').innerHTML='<div class="empty">未解析到菜色</div>';return;}
@@ -802,12 +862,12 @@ function renderReview(){
     if(!byDate[d.date][d.meal])byDate[d.date][d.meal]=[];
     byDate[d.date][d.meal].push(d);
   });
-  // Track chef per date
   const chefByDate={};
   allDishes.forEach(d=>{if(d.chef&&!chefByDate[d.date])chefByDate[d.date]=d.chef;});
 
   const dates=Object.keys(byDate).sort((a,b)=>{const[am,ad]=a.split('/').map(Number),[bm,bd]=b.split('/').map(Number);return am!==bm?am-bm:ad-bd;});
-  const weeks=[];for(let i=0;i<dates.length;i+=7)weeks.push(dates.slice(i,i+7));
+  // 5天一組
+  const weeks=[];for(let i=0;i<dates.length;i+=5)weeks.push(dates.slice(i,i+5));
   let html='';
   weeks.forEach((wk,wi)=>{
     html+=`<div class="week-section"><div class="week-label">第 ${wi+1} 週</div><div class="week-wrap"><table class="wtable"><thead><tr><th style="width:56px">餐別</th>`;
@@ -823,7 +883,17 @@ function renderReview(){
         const md=(byDate[date]&&byDate[date][meal])||[];
         html+=`<td><div class="mb">`;
         if(!md.length)html+=`<span style="font-size:11px;color:var(--text3)">—</span>`;
-        else md.forEach(d=>{const rp=isRepeat(d,allDishes);html+=`<div class="dish-r"><span class="dcat">${d.cat}</span><span class="dname${rp?' rp':''}">${d.name}${rp?'<span class="rbadge">重複</span>':''}</span></div>`;});
+        else md.forEach(d=>{
+          const rp=isRepeat(d,allDishes);
+          const sim=!rp&&isSimilarRepeat(d,allDishes);
+          const fried=isFried(d.name);
+          let cls='dname';
+          let badge='';
+          if(rp){cls+=' rp';badge='<span class="rbadge">重複</span>';}
+          else if(sim){cls+=' rp' ;badge='<span class="rbadge" style="background:#FFF3E0;color:#E65100;border-color:#FFCC80">相似</span>';}
+          if(fried)badge+='<span class="rbadge" style="background:#FFF8E1;color:#F57F17;border-color:#FFE082">油炸</span>';
+          html+=`<div class="dish-r"><span class="dcat">${d.cat}</span><span class="${cls}">${d.name}${badge}</span></div>`;
+        });
         html+=`</div></td>`;
       });
       html+=`</tr>`;
@@ -836,10 +906,10 @@ function renderReview(){
 function renderStats(){
   const unique=new Set(allDishes.map(d=>d.name)).size;
   const rp=new Set(allDishes.filter(d=>isRepeat(d,allDishes)).map(d=>d.name)).size;
-  const fkw=['炸','酥','脆皮','排骨','雞排'];
-  const fp=allDishes.length?Math.round(allDishes.filter(d=>fkw.some(k=>d.name.includes(k))).length/allDishes.length*100):0;
+  const sim=new Set(allDishes.filter(d=>!isRepeat(d,allDishes)&&isSimilarRepeat(d,allDishes)).map(d=>d.name)).size;
+  const fp=allDishes.length?Math.round(allDishes.filter(d=>isFried(d.name)).length/allDishes.length*100):0;
   document.getElementById('s-total').textContent=unique;
-  document.getElementById('s-repeat').textContent=rp;
+  document.getElementById('s-repeat').textContent=rp+'+'+sim;
   document.getElementById('s-fried').textContent=fp+'%';
   document.getElementById('s-rows').textContent=allDishes.length;
 }
@@ -887,56 +957,213 @@ const SEASONAL_VEG={
 
 const GEMINI_KEY='AIzaSyBjeWWBkaZUU96KOSijLTRkwf7UEUt20aw';
 
+// ── 節慶資料 ──────────────────────────────────
+const FESTIVALS={
+  '1/1':['元旦','長壽麵、年糕料理'],
+  '1/25':['農曆新年前','傳統年菜：佛跳牆、紅燒獅子頭、蘿蔔糕'],
+  '2/14':['情人節','浪漫料理：烤牛排、義式燉飯、巧克力甜點'],
+  '3/8':['婦女節','精緻料理：法式料理、創意甜點'],
+  '4/4':['清明節','傳統料理：潤餅、草仔粿'],
+  '5/1':['勞動節','豐盛料理：烤肉、薑母鴨'],
+  '5/11':['母親節前','溫馨料理：雞湯、紅豆湯圓'],
+  '5/31':['端午節前','粽子相關：竹筒飯、肉粽、鹼粽'],
+  '6/1':['端午節','粽子文化：客家粽、南部粽、北部粽變化'],
+  '7/7':['七夕','浪漫台式料理：麻油雞、薑汁番薯湯'],
+  '8/15':['中秋節前','烤肉文化：月餅創意料理、柚子料理'],
+  '9/29':['重陽節','長壽料理：菊花料理、藥膳雞湯'],
+  '10/10':['國慶日','台灣代表料理：滷肉飯、牛肉麵、珍珠奶茶甜點'],
+  '11/11':['冬令進補前','羊肉爐、薑母鴨、麻油雞'],
+  '12/25':['聖誕節','西式料理：烤雞、薯泥、蘑菇湯'],
+  '12/31':['跨年','豐盛料理：火鍋、壽喜燒'],
+};
+
+// ── 烹飪手法資料 ──────────────────────────────
+const COOKING_METHODS={
+  '炸':['酥炸','粉炸','天婦羅','鹽酥','脆皮'],
+  '炒':['快炒','乾炒','濕炒','三杯','蒜炒'],
+  '蒸':['清蒸','電鍋蒸','隔水蒸','粉蒸'],
+  '滷':['紅燒','醬滷','白滷','滷水'],
+  '烤':['炭烤','烘烤','焗烤','燒烤'],
+  '煮':['水煮','燉煮','燜煮','清煮'],
+  '燉':['慢燉','藥膳燉','蒸燉'],
+  '醃':['涼拌','醃漬','醋拌'],
+};
+
+// ── 國際料理風格 ──────────────────────────────
+const INTL_STYLES={
+  '日式':['照燒','味噌','天婦羅','壽喜燒','茶碗蒸','味增湯'],
+  '泰式':['打拋','泰式炒','咖哩','酸辣','椰奶'],
+  '韓式':['泡菜','石鍋','辣炒','韓式燒烤','人參'],
+  '義式':['番茄醬','白醬','義大利麵','焗烤','青醬'],
+  '港式':['蠔油','豉汁','廣式','點心','清蒸'],
+  '台式':['三杯','滷','薑母','麻油','客家'],
+  '川式':['麻辣','椒麻','紅油','水煮','夫妻肺片'],
+};
+
+// ── 台灣小吃/辦桌菜 ──────────────────────────
+const TAIWAN_CLASSICS={
+  '辦桌菜':['佛跳牆','紅燒獅子頭','烏魚子炒飯','砂鍋魚頭','蔥燒海參','紅蟳米糕'],
+  '台灣小吃':['滷肉飯','蚵仔煎','肉圓','米糕','擔仔麵','棺材板'],
+  '家常經典':['控肉飯','排骨飯','雞腿飯','魯蛋','炒米粉'],
+};
+
+function getUpcomingFestivals(){
+  const now=new Date();
+  const alerts=[];
+  Object.entries(FESTIVALS).forEach(([dateStr,info])=>{
+    const[m,d]=dateStr.split('/').map(Number);
+    const fest=new Date(now.getFullYear(),m-1,d);
+    const diff=(fest-now)/86400000;
+    if(diff>=0&&diff<=14){
+      alerts.push({date:dateStr,name:info[0],suggestion:info[1],days:Math.round(diff)});
+    }
+  });
+  return alerts;
+}
+
 async function runAnalysis(){
   if(!allDishes.length){toast('請先載入菜單');return;}
   const out=document.getElementById('analysis-out');
   out.innerHTML='<div class="ldrow"><span class="spinner"></span>分析中…</div>';
 
+  const now=new Date();
+  const month=now.getMonth()+1;
+
+  // 基礎統計
   const dc={};allDishes.forEach(d=>{dc[d.name]=(dc[d.name]||0)+1;});
   const sorted=Object.entries(dc).sort((a,b)=>b[1]-a[1]).slice(0,15);
   const rpNames=[...new Set(allDishes.filter(d=>isRepeat(d,allDishes)).map(d=>d.name))];
-
-  // 頻率圖
   const mc=sorted[0]?.[1]||1;
   const bars=sorted.slice(0,10).map(([n,c])=>{
     const w=Math.round(c/mc*100),hi=c>=3;
     return`<div class="br"><span class="bn">${n}</span><div class="bbg"><div class="bf" style="width:${w}%;background:${hi?'var(--warn)':'var(--accent)'}"></div></div><span class="bc">${c}次</span></div>`;
   }).join('');
 
-  // 時令蔬菜分析
-  const now=new Date();
-  const month=now.getMonth()+1;
+  // 時令蔬菜
   const seasonal=SEASONAL_VEG[month]||[];
   const usedVeg=allDishes.filter(d=>d.cat==='時蔬').map(d=>d.name);
   const usedSet=new Set(usedVeg);
-  const missingVeg=seasonal.filter(v=>![...usedSet].some(u=>u.includes(v)||v.includes(u)));
-  const recommendVeg=missingVeg.slice(0,5);
+  const missingVeg=seasonal.filter(v=>![...usedSet].some(u=>u.includes(v)||v.includes(u))).slice(0,4);
+  const vegCards=missingVeg.map(v=>`
+    <div style="background:var(--bg);border-radius:var(--r);border:1px solid var(--border);padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+      <div><div style="font-size:13px;font-weight:500">清炒${v}</div><div style="font-size:11px;color:var(--text2)">${month}月盛產・當季推薦</div></div>
+      <button class="btn btn-ghost" onclick="genImage('清炒${v}',this)" style="font-size:11px;padding:4px 8px;flex-shrink:0">生成圖片</button>
+    </div>
+    <div id="img-${v}" style="display:none;margin-bottom:8px"></div>`).join('');
 
-  const summary=rpNames.length>0?`本月有 ${rpNames.length} 道菜色在10天內重複，建議調整菜單多樣性`:'本月菜單多樣性良好';
-
-  const vegCards=recommendVeg.map(v=>`
-    <div style="background:var(--bg);border-radius:var(--r);border:1px solid var(--border);padding:12px;margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div>
-          <div style="font-size:13px;font-weight:500">清炒${v}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px">${month}月盛產・當季推薦</div>
-        </div>
-        <button class="btn btn-ghost" onclick="genImage('清炒${v}', this)" style="font-size:11px;padding:5px 10px;flex-shrink:0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-          生成圖片
-        </button>
+  // 節慶提醒
+  const festivals=getUpcomingFestivals();
+  const festHtml=festivals.length>0?festivals.map(f=>`
+    <div style="background:#FFF8E7;border:1px solid #F0D898;border-radius:var(--r);padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:16px">🎉</span>
+        <span style="font-size:13px;font-weight:500">${f.name}${f.days===0?'（今天！）':`（${f.days}天後）`}</span>
       </div>
-      <div id="img-${v}" style="display:none;margin-top:8px"></div>
-    </div>`).join('');
+      <div style="font-size:12px;color:var(--text2)">${f.suggestion}</div>
+    </div>`).join(''):'<div style="font-size:12px;color:var(--text3)">近兩週無特殊節慶</div>';
+
+  // 烹飪手法分析
+  const usedMethods=new Set();
+  allDishes.forEach(d=>{
+    Object.keys(COOKING_METHODS).forEach(m=>{
+      if(COOKING_METHODS[m].some(k=>d.name.includes(k))||d.name.includes(m))usedMethods.add(m);
+    });
+  });
+  const unusedMethods=Object.keys(COOKING_METHODS).filter(m=>!usedMethods.has(m));
+  const methodHtml=unusedMethods.slice(0,4).map(m=>`
+    <div style="background:var(--bg);border-radius:var(--r);border:1px solid var(--border);padding:10px 12px;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:500">${m}類料理</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">可嘗試：${COOKING_METHODS[m].slice(0,3).join('、')}</div>
+    </div>`).join('')||'<div style="font-size:12px;color:var(--text3)">烹飪手法已相當多樣！</div>';
+
+  // 食材替換建議
+  const topDishes=sorted.slice(0,5).map(([n])=>n);
+  const subHtml=topDishes.map(dish=>{
+    const subs=[];
+    if(dish.includes('雞'))subs.push(dish.replace(/雞[肉腿翅胸]?/,'豬肉'));
+    if(dish.includes('豬'))subs.push(dish.replace(/豬[肉排]?/,'雞肉'));
+    if(dish.includes('炸'))subs.push(dish.replace('炸','清蒸'));
+    if(dish.includes('滷'))subs.push(dish.replace('滷','蜜汁'));
+    if(dish.includes('蒸'))subs.push(dish.replace('蒸','烤'));
+    if(!subs.length)return'';
+    return`<div style="background:var(--bg);border-radius:var(--r);border:1px solid var(--border);padding:10px 12px;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:500">${dish}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">→ 可替換：${subs.slice(0,2).join(' 或 ')}</div>
+    </div>`;
+  }).filter(Boolean).slice(0,3).join('')||'<div style="font-size:12px;color:var(--text3)">資料不足</div>';
+
+  // 國際料理分析
+  const styleCounts={};
+  Object.keys(INTL_STYLES).forEach(s=>{
+    styleCounts[s]=allDishes.filter(d=>INTL_STYLES[s].some(k=>d.name.includes(k))).length;
+  });
+  const topStyle=Object.entries(styleCounts).sort((a,b)=>b[1]-a[1])[0];
+  const missingStyles=Object.entries(styleCounts).filter(([,c])=>c===0).map(([s])=>s);
+  const intlHtml=`
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">
+      ${topStyle?`本月以「${topStyle[0]}」料理最多（${topStyle[1]}道）`:''}
+    </div>
+    ${missingStyles.slice(0,3).map(s=>`
+      <div style="background:var(--bg);border-radius:var(--r);border:1px solid var(--border);padding:10px 12px;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:500">${s}料理</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:3px">建議嘗試：${INTL_STYLES[s].slice(0,3).join('、')}</div>
+      </div>`).join('')}`;
+
+  // 台灣小吃/辦桌靈感
+  const usedNames=new Set(allDishes.map(d=>d.name));
+  const allClassics=[...TAIWAN_CLASSICS['辦桌菜'],...TAIWAN_CLASSICS['台灣小吃'],...TAIWAN_CLASSICS['家常經典']];
+  const unusedClassics=allClassics.filter(c=>![...usedNames].some(u=>u.includes(c)||c.includes(u))).slice(0,4);
+  const classicHtml=unusedClassics.map(c=>`
+    <div style="background:var(--bg);border-radius:var(--r);border:1px solid var(--border);padding:10px 12px;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:500">${c}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">台灣經典・員工熟悉的家鄉味</div>
+    </div>`).join('')||'<div style="font-size:12px;color:var(--text3)">台灣經典菜色都已使用！</div>';
+
+  const summary=rpNames.length>0?`本月有 ${rpNames.length} 道菜色在10天內重複，建議調整多樣性`:'本月菜單多樣性良好';
 
   out.innerHTML=`
-    <div style="background:var(--info-light);border:1px solid #c0d0e8;border-radius:var(--r);padding:12px 16px;font-size:13px;color:var(--info);margin-bottom:16px">${summary}</div>
-    <div class="agrid">
+    <div style="background:var(--info-light);border:1px solid #c0d0e8;border-radius:var(--r);padding:12px 16px;font-size:13px;color:var(--info);margin-bottom:20px">${summary}</div>
+
+    <div class="agrid" style="margin-bottom:20px">
       <div class="ac"><h4>菜色出現頻率</h4>${bars}</div>
+      <div class="ac"><h4>🎉 近期節慶提醒</h4>${festHtml}</div>
+    </div>
+
+    <div class="agrid" style="margin-bottom:20px">
       <div class="ac">
-        <h4>${month}月時令蔬菜推薦</h4>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:12px">本月盛產但尚未使用的蔬菜</div>
-        ${vegCards||'<p style="font-size:13px;color:var(--text3)">本月時令蔬菜都已使用，很棒！</p>'}
+        <h4>🌿 ${month}月時令蔬菜推薦</h4>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">尚未使用的當季蔬菜</div>
+        ${vegCards||'<p style="font-size:13px;color:var(--text3)">本月時令蔬菜都已使用！</p>'}
+      </div>
+      <div class="ac">
+        <h4>🍳 未嘗試的烹飪手法</h4>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">多樣化烹飪方式讓菜色更豐富</div>
+        ${methodHtml}
+      </div>
+    </div>
+
+    <div class="agrid" style="margin-bottom:20px">
+      <div class="ac">
+        <h4>🔄 食材替換建議</h4>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">高頻菜色的替換靈感</div>
+        ${subHtml}
+      </div>
+      <div class="ac">
+        <h4>🌏 國際料理輪替</h4>
+        ${intlHtml}
+      </div>
+    </div>
+
+    <div class="agrid">
+      <div class="ac" style="grid-column:1/-1">
+        <h4>🏮 台灣小吃 / 辦桌菜靈感</h4>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">未出現過的台灣經典菜色</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">${unusedClassics.map(c=>`
+          <div style="background:var(--bg);border-radius:var(--r);border:1px solid var(--border);padding:10px 12px">
+            <div style="font-size:13px;font-weight:500">${c}</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:3px">台灣經典・員工熟悉的家鄉味</div>
+          </div>`).join('')||'<p style="font-size:13px;color:var(--text3)">台灣經典菜色都已使用！</p>'}
+        </div>
       </div>
     </div>`;
 }
